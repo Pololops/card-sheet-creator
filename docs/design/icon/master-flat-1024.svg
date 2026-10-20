@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <clipPath id="squircle"><rect width="1024" height="1024" rx="230"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A5DB8"/>
+      <stop offset="1" stop-color="#12306E"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFC25C"/>
+      <stop offset="1" stop-color="#FF6E4A"/>
+    </linearGradient>
+    <filter id="rest" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000814" flood-opacity="0.42"/>
+    </filter>
+    <filter id="hover" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="12" dy="46" stdDeviation="40" flood-color="#000814" flood-opacity="0.45"/>
+    </filter>
+    <g id="card">
+      <rect x="-7" y="-7" width="374" height="584.6" rx="39" fill="#FFFFFF"/>
+      <rect width="360" height="570.6" rx="32.4" fill="url(#sky)"/>
+      <circle cx="223.2" cy="201.6" r="64.8" fill="#FFF5DE"/>
+      <path d="M0 403.2 C 108 331.2 230.4 338.4 360 417.6 V538.2 A32.4 32.4 0 0 1 327.6 570.6 H32.4 A32.4 32.4 0 0 1 0 538.2 Z" fill="#0062CC"/>
+    </g>
+  </defs>
+  <g clip-path="url(#squircle)">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+    <g filter="url(#rest)"><use href="#card" transform="translate(198 113)"/></g>
+    <g filter="url(#rest)"><use href="#card" transform="translate(308 209)"/></g>
+    <g filter="url(#hover)"><use href="#card" transform="translate(592 572.3) rotate(7) scale(1.06) translate(-180 -285.3)"/></g>
+  </g>
+</svg>

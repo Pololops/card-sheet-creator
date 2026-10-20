@@ -1,0 +1,80 @@
+{
+  "color-space-for-untagged-svg-colors" : "display-p3",
+  "features" : [
+    "refractivity",
+    "specular-location"
+  ],
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.20935,0.35034,0.67773,1.00000",
+      "display-p3:0.09991,0.18054,0.40723,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "card-top.svg",
+          "name" : "card-top",
+          "opacity" : 1
+        }
+      ],
+      "opacity" : 1,
+      "refractivity" : {
+        "depth" : 0.2384765625,
+        "enabled" : true,
+        "strength" : 0.301328125
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.9
+      },
+      "specular" : "inside",
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.1
+      }
+    },
+    {
+      "blur-material" : 0.5,
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "card-middle.svg",
+          "name" : "card-middle",
+          "opacity" : 1
+        },
+        {
+          "glass" : true,
+          "image-name" : "card-bottom.svg",
+          "name" : "card-bottom",
+          "opacity" : 1
+        }
+      ],
+      "lighting" : "individual",
+      "name" : "Group",
+      "opacity" : 0.85,
+      "refractivity" : {
+        "depth" : 0.2733203125,
+        "enabled" : true,
+        "strength" : 0.2853515625
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.2
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
