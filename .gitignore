@@ -1,0 +1,9 @@
+.DS_Store
+*.xcodeproj
+xcuserdata/
+.build/
+.swiftpm/
+DerivedData/
+dist/
+.claude/settings.local.json
+.impeccable/

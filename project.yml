@@ -1,0 +1,64 @@
+name: CardSheetCreator
+options:
+  bundleIdPrefix: com.pololops
+  deploymentTarget:
+    macOS: "26.0"
+  developmentLanguage: fr
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+packages:
+  CardSheetCore:
+    path: Packages/CardSheetCore
+targets:
+  CardSheetCreator:
+    type: application
+    platform: macOS
+    sources:
+      - path: App/CardSheetCreator
+        type: syncedFolder
+    dependencies:
+      - package: CardSheetCore
+        products: [Domain, Rendering, Storage, Printing]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pololops.CardSheetCreator
+        PRODUCT_NAME: CardSheetCreator
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Card Sheet Creator
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Pololops — MIT"
+        CODE_SIGN_ENTITLEMENTS: App/CardSheetCreator/Resources/CardSheetCreator.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+  CardSheetCreatorTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: App/CardSheetCreatorTests
+        type: syncedFolder
+    dependencies:
+      - target: CardSheetCreator
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.pololops.CardSheetCreatorTests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/CardSheetCreator.app/Contents/MacOS/CardSheetCreator
+        BUNDLE_LOADER: $(TEST_HOST)
+schemes:
+  CardSheetCreator:
+    build:
+      targets:
+        CardSheetCreator: all
+        CardSheetCreatorTests: [test]
+    test:
+      targets: [CardSheetCreatorTests]
