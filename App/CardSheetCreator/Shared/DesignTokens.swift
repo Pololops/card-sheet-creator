@@ -17,6 +17,13 @@ enum Design {
     static let changedField = rgb(0xC77700)
     static let printerReady = rgb(0x2E9E50)
     static let dragBadge = rgb(0xE0352B)
+    /// Neutral grey around a colour reference: fixed, so the surround never biases the eye in dark mode.
+    static let referenceFrame = rgb(0x808080)
+    static let success = dynamic(light: 0x2C6E3F, dark: 0x5BD27A)
+    static let currentStep = Color.accentColor.opacity(0.12)
+    static let onAccent = Color.white
+    /// Text on the always-white paper rectangle: fixed for the same reason as the paper itself.
+    static let onPaper = Color.black.opacity(0.62)
   }
 
   enum Metrics {
@@ -29,6 +36,15 @@ enum Design {
     static let fieldWidth: CGFloat = 62
     static let canvasTopInset: CGFloat = 28
     static let canvasBottomInset: CGFloat = 92
+    /// Content area of the colour calibration window (the 840 × 660 mockup minus its title bar).
+    static let calibrationWindow = CGSize(width: 840, height: 616)
+    static let calibrationSideColumn: CGFloat = 290
+    static let letterTile: CGFloat = 48
+    static let referenceSide: CGFloat = 200
+    static let referenceFramePadding: CGFloat = 24
+    static let verificationReferenceSide: CGFloat = 96
+    static let dryingRing: CGFloat = 128
+    static let verificationRing: CGFloat = 112
   }
 
   enum Typography {
@@ -40,8 +56,16 @@ enum Design {
     static let body = Font.body
     /// 15 pt: key figure such as "3 × 3 = 9 cartes".
     static let figure = Font.title3.weight(.bold)
+    /// 15 pt: the instruction a calibration step leads with.
+    static let lead = Font.title3
     /// 17 pt: dialog titles.
     static let dialogTitle = Font.title2.weight(.bold)
+    /// 22 pt: the heading of a calibration step.
+    static let stepTitle = Font.title.weight(.bold)
+    /// 26 pt: the closing "C'est réglé".
+    static let stepHero = Font.largeTitle.weight(.bold)
+    /// 17 pt: the letter naming a patch, the one thing to read on the tile.
+    static let tileLetter = Font.title2.weight(.bold)
   }
 
   private static func rgb(_ hex: UInt32) -> Color {

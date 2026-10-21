@@ -19,6 +19,7 @@ struct RootView: View {
   @State private var selectedSlot: Int?
   @State private var calibrationFailure: String?
   @Environment(\.undoManager) private var undoManager
+  @Environment(\.openWindow) private var openWindow
 
   init(environment: AppEnvironment) {
     self.environment = environment
@@ -76,6 +77,9 @@ struct RootView: View {
     } message: {
       Text(calibrationFailure ?? "")
     }
+    .colorCalibrationHandoff(
+      route: environment.calibrationRoute, library: model, onReopen: openPrint(sheets:printerName:)
+    )
     .focusedSceneValue(\.appActions, actions)
   }
 
@@ -123,7 +127,7 @@ struct RootView: View {
           Button("Imprimer", systemImage: "printer", action: openPrint)
             .labelStyle(.titleAndIcon)
             .buttonStyle(.glassProminent)
-            .disabled(model.selectedSheets.isEmpty)
+            .disabled(model.selectedSheets.isEmpty || environment.calibrationRoute.isWindowOpen)
         }
       }
     }
@@ -155,11 +159,17 @@ struct RootView: View {
     AppActions(
       newTemplate: { _ = model.createTemplate() },
       newSheet: { isNewSheetShown = true },
-      print: model.selectedSheets.isEmpty || resizeDraft != nil ? nil : { openPrint() },
+      print: canPrint ? { openPrint() } : nil,
       zoomToFit: { zoom.mode = .fit },
       zoomToRealSize: { zoom.mode = .realSize },
       toggleInspector: { isInspectorShown.toggle() },
+      calibrateColors: printController == nil ? { calibrateColors() } : nil,
       printCalibrationPage: printCalibrationPage)
+  }
+
+  /// Two windows must not write the print settings at once: printing waits while the calibration is open.
+  private var canPrint: Bool {
+    !model.selectedSheets.isEmpty && resizeDraft == nil && !environment.calibrationRoute.isWindowOpen
   }
 
   private func chooseImages(for template: Template) {
@@ -178,9 +188,24 @@ struct RootView: View {
   }
 
   private func openPrint() {
+    openPrint(sheets: model.selectedSheets, printerName: nil)
+  }
+
+  private func openPrint(sheets: [Sheet], printerName: String?) {
+    var saved = model.printSettings
+    if let printerName { saved.printerName = printerName }
     printController = PrintController(
-      sheets: model.selectedSheets, saved: model.printSettings, printService: environment.printService,
+      sheets: sheets, saved: saved, printService: environment.printService,
       persistence: environment.persistence)
+  }
+
+  /// The window already open is only brought forward: a new launch would restart its flow.
+  private func calibrateColors() {
+    let route = environment.calibrationRoute
+    if !route.isWindowOpen {
+      route.launch = ColorCalibrationRoute.Launch(printerName: model.printSettings.printerName, sheetIDs: [])
+    }
+    openWindow(id: ColorCalibrationWindow.id)
   }
 
   private func printCalibrationPage() {

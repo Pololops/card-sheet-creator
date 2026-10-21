@@ -4,7 +4,7 @@ Run before each release, on the Canon G5000 series and at least one other printe
 
 ## Exact size
 
-1. **Calibration** menu → *Imprimer la page de calibration…*
+1. **Imprimante** menu → *Imprimer la page de calibration…*
 2. Measure the card outline: 54 × 85.6 mm ± 0.5 mm. Measure both rulers: 100 mm ± 0.5 mm.
 3. At the middle of each edge, note the first printed mark (1 to 5 mm): it is the printer's real margin.
    If no mark prints on an edge, the unprintable border exceeds 5 mm — write a new ADR.

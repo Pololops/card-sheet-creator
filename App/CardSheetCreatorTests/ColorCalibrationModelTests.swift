@@ -110,6 +110,19 @@ import Testing
     #expect(rig.model.step == .compare)
   }
 
+  @Test func goingBackToPrepareIsOnlyPossibleBeforeTheChartPrints() async throws {
+    let rig = try await CalibrationRig.make()
+    rig.startPrinting()
+
+    rig.model.goBackToPrepare()
+    #expect(rig.model.step == .prepare)
+
+    rig.model.continueToPrint()
+    await rig.model.printChart()
+    rig.model.goBackToPrepare()
+    #expect(rig.model.step == .print)
+  }
+
   @Test func failedChartPrintCanBeRetried() async throws {
     let rig = try await CalibrationRig.make()
     rig.startPrinting()
@@ -183,6 +196,16 @@ import Testing
   }
 
   // MARK: - Vérifier
+
+  @Test func verificationWaitsForItsOwnInkNotTheCharts() async throws {
+    let rig = try await CalibrationRig.make()
+
+    try await rig.complete()
+    #expect(rig.model.dryingEndsAt == nil)
+
+    await rig.model.printVerification()
+    #expect(rig.model.dryingEndsAt == rig.clock.now.addingTimeInterval(ColorCalibrationModel.dryingDuration))
+  }
 
   @Test func vanishedPrinterKeepsThePicks() async throws {
     let rig = try await CalibrationRig.make()

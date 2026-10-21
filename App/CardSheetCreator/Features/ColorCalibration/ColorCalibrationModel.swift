@@ -80,6 +80,12 @@ final class ColorCalibrationModel {
 
   // MARK: - Imprimer
 
+  /// Once a chart is out the sheet is in the user's hands: going back would orphan it.
+  func goBackToPrepare() {
+    guard step == .print, !isPrinting, dryingEndsAt == nil else { return }
+    step = .prepare
+  }
+
   var canStartComparing: Bool { step == .print && dryingEndsAt != nil && !isInkWet }
 
   func printChart() async {
@@ -113,6 +119,8 @@ final class ColorCalibrationModel {
     self.session = session
     guard session.isComplete else { return }
     save(session.result)
+    // The chart's drying is over: Vérifier tells "not printed yet" from "drying" by this date.
+    dryingEndsAt = nil
     step = .verify
   }
 

@@ -10,19 +10,29 @@ Planned work, not yet scheduled in a release.
 
 ### V2 — colour
 
-- **ICC colour management** — print with the printer's colour profile. Images already keep their source
-  colour space ([ADR 0005](docs/adr/0005-single-core-graphics-pdf-renderer.md)).
-- **Manual corrections** — adjust colour by hand when a printer drifts.
 - **Saved print and colour profiles** — reuse a printer, paper and colour setup in one click.
 
 ### Later
 
+- **Import an ICC profile** — for printers that ship one, as an alternative to visual calibration
+  ([ADR 0012](docs/adr/0012-visual-colour-calibration.md)).
 - **Developer ID signing and notarization** — no more "Open Anyway" on first launch; needs an Apple
   Developer account ([ADR 0009](docs/adr/0009-ad-hoc-distribution.md)).
 - **iOS and iPadOS** — a new app target and an iOS print adapter; Domain, Rendering and Storage carry
   over ([ADR 0002](docs/adr/0002-native-swift-swiftui.md)).
 
 ## [Unreleased]
+
+### Added
+
+- **Colour calibration** — *Imprimante → Régler les couleurs…* opens a five-step assistant: print a colour
+  chart, pick on paper the patches that match the screen, and that printer's sheets print closer to what
+  you see. White stays paper-white; saved PDFs, previews and exact size are unchanged
+  ([ADR 0012](docs/adr/0012-visual-colour-calibration.md)).
+
+### Changed
+
+- The *Calibration* menu is now *Imprimante*.
 
 ## [0.3.0] — 2026-10-21
 

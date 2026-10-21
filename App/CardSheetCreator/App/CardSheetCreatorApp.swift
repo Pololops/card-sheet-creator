@@ -13,6 +13,16 @@ struct CardSheetCreatorApp: App {
     }
     .defaultSize(width: 1280, height: 800)
     .commands { AppCommands() }
+
+    // A second window rather than a sheet: the user looks at paper and screen side by side while the
+    // library stays reachable behind it (ADR 0012).
+    Window("Réglage des couleurs", id: ColorCalibrationWindow.id) {
+      ColorCalibrationWindow(environment: delegate.environment)
+    }
+    .windowResizability(.contentSize)
+    .restorationBehavior(.disabled)
+    .defaultLaunchBehavior(.suppressed)
+    .commandsRemoved()
   }
 }
 
@@ -39,6 +49,7 @@ struct AppActions {
   var zoomToFit: () -> Void
   var zoomToRealSize: () -> Void
   var toggleInspector: () -> Void
+  var calibrateColors: (() -> Void)?
   var printCalibrationPage: () -> Void
 }
 
@@ -69,8 +80,11 @@ struct AppCommands: Commands {
       Button("Afficher ou masquer l'inspecteur") { actions?.toggleInspector() }
         .keyboardShortcut("0", modifiers: [.command, .option])
     }
-    CommandMenu("Calibration") {
+    CommandMenu("Imprimante") {
+      Button("Régler les couleurs…") { actions?.calibrateColors?() }
+        .disabled(actions?.calibrateColors == nil)
       Button("Imprimer la page de calibration…") { actions?.printCalibrationPage() }
+        .disabled(actions == nil)
     }
   }
 }
