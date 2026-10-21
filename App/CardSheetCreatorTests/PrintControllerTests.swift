@@ -238,4 +238,22 @@ import Testing
     #expect(controller.colorCalibration == nil)
     #expect(Set(controller.settings.colorCalibrations.keys) == [Self.epson])
   }
+
+  @Test func onlyAPrinterWithoutCorrectionIsOfferedCalibration() async throws {
+    let (controller, _) = try await makeController(saved: calibratedSettings(calibration()))
+    #expect(!controller.offersColorCalibration)
+
+    controller.selectPrinter(Self.epson)
+    #expect(controller.offersColorCalibration)
+
+    controller.selectPrinter(Self.canon)
+    controller.resetColorCalibration()
+    #expect(controller.offersColorCalibration)
+  }
+
+  @Test func noPrinterMeansNothingToCalibrate() async throws {
+    let (controller, _) = try await makeController(printers: [], fingerprints: [:])
+
+    #expect(!controller.offersColorCalibration)
+  }
 }

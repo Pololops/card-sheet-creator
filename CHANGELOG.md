@@ -29,6 +29,8 @@ Planned work, not yet scheduled in a release.
   chart, pick on paper the patches that match the screen, and that printer's sheets print closer to what
   you see. White stays paper-white; saved PDFs, previews and exact size are unchanged
   ([ADR 0012](docs/adr/0012-visual-colour-calibration.md)).
+- The print dialog invites you to set the colours of a printer that has none, and lets you switch a
+  correction off, redo it or reset it; it warns when the printer's options or quality changed since.
 
 ### Changed
 

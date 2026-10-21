@@ -3,7 +3,7 @@ import SwiftUI
 /// Step 5: what the printer does wrong in plain words, and what the app now compensates.
 struct DoneStep: View {
   let model: ColorCalibrationModel
-  let onFinish: () -> Void
+  let onFinish: (_ printingAfterwards: Bool) -> Void
 
   var body: some View {
     VStack(spacing: 0) {
@@ -14,9 +14,18 @@ struct DoneStep: View {
       .padding(.horizontal, 32)
       .padding(.vertical, 24)
       .frame(maxHeight: .infinity, alignment: .center)
-      StepFooter {
-      } primary: {
-        Button("Terminer", action: onFinish).primaryAction()
+      footer
+    }
+  }
+
+  private var footer: some View {
+    StepFooter {
+      if model.canPrintAfterwards { Button("Terminer") { onFinish(false) }.secondaryAction() }
+    } primary: {
+      if model.canPrintAfterwards {
+        Button("Terminer et imprimer") { onFinish(true) }.primaryAction()
+      } else {
+        Button("Terminer") { onFinish(false) }.primaryAction()
       }
     }
   }

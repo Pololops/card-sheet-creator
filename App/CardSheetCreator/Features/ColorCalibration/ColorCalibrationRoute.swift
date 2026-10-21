@@ -29,4 +29,10 @@ final class ColorCalibrationRoute {
   var handoff: Handoff?
   /// Two windows must not write the print settings at once: the print action waits while this is true.
   var isWindowOpen = false
+
+  /// A window already open is left as it is: a new launch would restart its flow and lose the user's picks.
+  func start(printerName: String?, sheetIDs: [UUID]) {
+    guard !isWindowOpen else { return }
+    launch = Launch(printerName: printerName, sheetIDs: sheetIDs)
+  }
 }

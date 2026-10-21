@@ -53,6 +53,9 @@ final class PrintController {
     settings.printerName.flatMap { settings.colorCalibrations[$0] }
   }
 
+  /// A printer that was never calibrated invites the user to do it, every time the dialog opens.
+  var offersColorCalibration: Bool { !printers.isEmpty && colorCalibration == nil }
+
   /// The correction is kept when the printer's setup changed since it was measured, only flagged.
   var isColorCalibrationOutdated: Bool {
     colorCalibration?.isOutdated(

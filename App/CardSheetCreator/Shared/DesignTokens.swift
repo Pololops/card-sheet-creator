@@ -21,6 +21,9 @@ enum Design {
     static let referenceFrame = rgb(0x808080)
     static let success = dynamic(light: 0x2C6E3F, dark: 0x5BD27A)
     static let currentStep = Color.accentColor.opacity(0.12)
+    /// The invitation to calibrate: tinted like the accent, never glass, readable in light and dark.
+    static let offerBackground = Color.accentColor.opacity(0.14)
+    static let offerStroke = Color.accentColor.opacity(0.35)
     static let onAccent = Color.white
     /// Text on the always-white paper rectangle: fixed for the same reason as the paper itself.
     static let onPaper = Color.black.opacity(0.62)

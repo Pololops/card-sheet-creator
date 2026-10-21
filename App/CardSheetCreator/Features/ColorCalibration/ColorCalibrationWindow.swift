@@ -2,10 +2,9 @@ import SwiftUI
 
 /// "Réglage des couleurs": a fixed-size window walking through the five steps of the calibration.
 struct ColorCalibrationWindow: View {
-  static let id = "color-calibration"
-
   let environment: AppEnvironment
   @State private var model: ColorCalibrationModel?
+  @Environment(\.openWindow) private var openWindow
   @Environment(\.dismissWindow) private var dismissWindow
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -50,7 +49,15 @@ struct ColorCalibrationWindow: View {
     case .print: PrintStep(model: model)
     case .compare: CompareStep(model: model)
     case .verify: VerifyStep(model: model)
-    case .done: DoneStep(model: model) { dismissWindow(id: Self.id) }
+    case .done: DoneStep(model: model) { finish(model, printingAfterwards: $0) }
     }
+  }
+
+  /// The library window opens first: dismissing the last window would quit the app before it could
+  /// receive the handoff.
+  private func finish(_ model: ColorCalibrationModel, printingAfterwards: Bool) {
+    openWindow(id: WindowID.library)
+    if printingAfterwards { route.handoff = model.handoff }
+    dismissWindow(id: WindowID.colorCalibration)
   }
 }

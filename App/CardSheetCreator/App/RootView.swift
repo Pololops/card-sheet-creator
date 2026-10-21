@@ -63,7 +63,12 @@ struct RootView: View {
     }
     .fileDialogConfirmationLabel("Sélectionner")
     .sheet(item: $printController) { controller in
-      PrintDialog(controller: controller, images: environment.images) { model.savePrintSettings($0) }
+      PrintDialog(
+        controller: controller, images: environment.images, onSettingsChange: { model.savePrintSettings($0) },
+        onCalibrate: {
+          printController = nil
+          openCalibration(printerName: controller.settings.printerName, sheetIDs: controller.sheets.map(\.id))
+        })
     }
     .sheet(item: offerBinding) { offer in
       TemplateOfferDialog(
@@ -78,7 +83,8 @@ struct RootView: View {
       Text(calibrationFailure ?? "")
     }
     .colorCalibrationHandoff(
-      route: environment.calibrationRoute, library: model, onReopen: openPrint(sheets:printerName:)
+      route: environment.calibrationRoute, library: model,
+      onReopen: { openPrint(sheets: $0, printerName: $1) }
     )
     .focusedSceneValue(\.appActions, actions)
   }
@@ -124,7 +130,7 @@ struct RootView: View {
             .labelStyle(.titleAndIcon)
         }
         ToolbarItem {
-          Button("Imprimer", systemImage: "printer", action: openPrint)
+          Button("Imprimer", systemImage: "printer") { openPrint() }
             .labelStyle(.titleAndIcon)
             .buttonStyle(.glassProminent)
             .disabled(model.selectedSheets.isEmpty || environment.calibrationRoute.isWindowOpen)
@@ -163,7 +169,8 @@ struct RootView: View {
       zoomToFit: { zoom.mode = .fit },
       zoomToRealSize: { zoom.mode = .realSize },
       toggleInspector: { isInspectorShown.toggle() },
-      calibrateColors: printController == nil ? { calibrateColors() } : nil,
+      calibrateColors: printController == nil
+        ? { openCalibration(printerName: model.printSettings.printerName, sheetIDs: []) } : nil,
       printCalibrationPage: printCalibrationPage)
   }
 
@@ -187,25 +194,17 @@ struct RootView: View {
     resizeDraft = nil
   }
 
-  private func openPrint() {
-    openPrint(sheets: model.selectedSheets, printerName: nil)
-  }
-
-  private func openPrint(sheets: [Sheet], printerName: String?) {
+  private func openPrint(sheets: [Sheet]? = nil, printerName: String? = nil) {
     var saved = model.printSettings
     if let printerName { saved.printerName = printerName }
     printController = PrintController(
-      sheets: sheets, saved: saved, printService: environment.printService,
+      sheets: sheets ?? model.selectedSheets, saved: saved, printService: environment.printService,
       persistence: environment.persistence)
   }
 
-  /// The window already open is only brought forward: a new launch would restart its flow.
-  private func calibrateColors() {
-    let route = environment.calibrationRoute
-    if !route.isWindowOpen {
-      route.launch = ColorCalibrationRoute.Launch(printerName: model.printSettings.printerName, sheetIDs: [])
-    }
-    openWindow(id: ColorCalibrationWindow.id)
+  private func openCalibration(printerName: String?, sheetIDs: [UUID]) {
+    environment.calibrationRoute.start(printerName: printerName, sheetIDs: sheetIDs)
+    openWindow(id: WindowID.colorCalibration)
   }
 
   private func printCalibrationPage() {

@@ -2,12 +2,17 @@ import AppKit
 import Rendering
 import SwiftUI
 
+enum WindowID {
+  static let library = "library"
+  static let colorCalibration = "color-calibration"
+}
+
 @main
 struct CardSheetCreatorApp: App {
   @NSApplicationDelegateAdaptor private var delegate: AppDelegate
 
   var body: some Scene {
-    Window("Card Sheet Creator", id: "library") {
+    Window("Card Sheet Creator", id: WindowID.library) {
       RootView(environment: delegate.environment)
         .frame(minWidth: 1100, minHeight: 720)
     }
@@ -16,7 +21,7 @@ struct CardSheetCreatorApp: App {
 
     // A second window rather than a sheet: the user looks at paper and screen side by side while the
     // library stays reachable behind it (ADR 0012).
-    Window("Réglage des couleurs", id: ColorCalibrationWindow.id) {
+    Window("Réglage des couleurs", id: WindowID.colorCalibration) {
       ColorCalibrationWindow(environment: delegate.environment)
     }
     .windowResizability(.contentSize)

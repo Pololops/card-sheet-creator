@@ -8,10 +8,14 @@ struct PrintDialog: View {
   @Bindable var controller: PrintController
   let images: ImageCache
   let onSettingsChange: (PrintSettings) -> Void
+  let onCalibrate: () -> Void
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
+      if controller.offersColorCalibration {
+        CalibrationOfferCard(onCalibrate: onCalibrate).transition(.opacity)
+      }
       VStack(alignment: .leading, spacing: 4) {
         Text(controller.title).font(Design.Typography.dialogTitle)
         Text(controller.sheets.map(\.name).joined(separator: " · "))
@@ -37,6 +41,12 @@ struct PrintDialog: View {
     .padding(24)
     .frame(width: 540)
     .disabled(controller.isWorking)
+    .animation(.easeOut(duration: 0.2), value: controller.offersColorCalibration)
+    .onChange(of: controller.settings.printerName) {
+      if controller.offersColorCalibration {
+        AccessibilityNotification.Announcement(CalibrationOfferCard.title).post()
+      }
+    }
     // `initial` persists a stale driver entry the controller dropped while opening.
     .onChange(of: controller.settings, initial: true) { _, settings in onSettingsChange(settings) }
   }
@@ -73,6 +83,10 @@ struct PrintDialog: View {
       GridRow {
         Text("Qualité")
         qualityControl
+      }
+      GridRow(alignment: .firstTextBaseline) {
+        Text("Couleurs")
+        ColorCorrectionRow(controller: controller, onCalibrate: onCalibrate)
       }
       GridRow {
         Text("Mise en page")
@@ -117,7 +131,7 @@ struct PrintDialog: View {
         .keyboardShortcut(.cancelAction)
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
-      Button("Imprimer") {
+      Button(controller.offersColorCalibration ? "Imprimer sans régler" : "Imprimer") {
         Task { if await controller.print() { dismiss() } }
       }
       .keyboardShortcut(.defaultAction)
