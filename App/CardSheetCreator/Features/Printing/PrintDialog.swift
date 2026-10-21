@@ -10,9 +10,6 @@ struct PrintDialog: View {
   let onSettingsChange: (PrintSettings) -> Void
   @Environment(\.dismiss) private var dismiss
 
-  private static let printersSettingsURL = URL(
-    string: "x-apple.systempreferences:com.apple.Print-Scanner-Settings.extension")
-
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
       VStack(alignment: .leading, spacing: 4) {
@@ -66,7 +63,8 @@ struct PrintDialog: View {
     Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 14) {
       GridRow {
         Text("Imprimante").gridColumnAlignment(.trailing)
-        printerRow
+        PrinterPicker(
+          printers: controller.printers, selection: printerSelection, isReady: controller.isPrinterReady)
       }
       GridRow {
         Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
@@ -109,34 +107,6 @@ struct PrintDialog: View {
     Binding(get: { controller.settings.printerName }, set: controller.selectPrinter)
   }
 
-  @ViewBuilder
-  private var printerRow: some View {
-    if controller.printers.isEmpty {
-      HStack(spacing: 10) {
-        Text("Aucune imprimante configurée").foregroundStyle(.secondary)
-        Button("Ouvrir Imprimantes et scanners") {
-          if let url = Self.printersSettingsURL { NSWorkspace.shared.open(url) }
-        }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
-      }
-    } else {
-      HStack(spacing: 10) {
-        Picker("Imprimante", selection: printerSelection) {
-          ForEach(controller.printers, id: \.self) { Text($0).tag(Optional($0)) }
-        }
-        .labelsHidden()
-        if let isReady = controller.isPrinterReady {
-          Label(isReady ? "Prête" : "Arrêtée", systemImage: "circle.fill")
-            .labelStyle(
-              StatusLabelStyle(color: isReady ? Design.Palette.printerReady : Design.Palette.warning)
-            )
-            .font(Design.Typography.caption)
-        }
-      }
-    }
-  }
-
   private var footer: some View {
     HStack(spacing: 10) {
       Button("Enregistrer en PDF…", action: savePDF)
@@ -163,16 +133,5 @@ struct PrintDialog: View {
     panel.nameFieldStringValue = "\(controller.sheets.first?.name ?? "Planches").pdf"
     guard panel.runModal() == .OK, let url = panel.url else { return }
     Task { if await controller.exportPDF(to: url) { dismiss() } }
-  }
-}
-
-private struct StatusLabelStyle: LabelStyle {
-  let color: Color
-
-  func makeBody(configuration: Configuration) -> some View {
-    HStack(spacing: 5) {
-      configuration.icon.font(.system(size: 7)).foregroundStyle(color)
-      configuration.title.foregroundStyle(.secondary)
-    }
   }
 }
