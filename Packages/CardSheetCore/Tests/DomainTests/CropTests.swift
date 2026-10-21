@@ -45,6 +45,16 @@ import Testing
     #expect(anchor == .centered)
   }
 
+  @Test func imageWithTheSlotRatioCannotBeReframed() {
+    let sameRatio = PixelSize(width: 540, height: 856)
+
+    #expect(!Crop.canReframe(image: sameRatio, slot: slot))
+  }
+
+  @Test func overflowingImageCanBeReframed() {
+    #expect(Crop.canReframe(image: landscape, slot: slot))
+  }
+
   @Test func dragOnlyMovesTheOverflowingAxis() {
     let anchor = Crop.anchor(.centered, afterDragBy: MMOffset(dx: 0, dy: 30), image: landscape, slot: slot)
 

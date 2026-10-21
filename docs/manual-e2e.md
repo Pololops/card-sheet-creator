@@ -23,7 +23,12 @@ Run before each release, on the Canon G5000 series and at least one other printe
 8. Pick one image with ⇧⌘N: one sheet, the image on every slot.
 9. Drag the image inside a slot: only the overflowing axis moves, never uncovering the slot; the
    clones are outlined; near the centre it snaps and the magenta guides appear. On release every clone
-   takes the framing. Arrow keys move it by 0.5 mm, ⇧ + arrow by 5 mm.
+   takes the framing. Arrow keys move it by 0.5 mm, ⇧ + arrow by 5 mm. Selecting a slot, even in a
+   720 pt tall window, changes neither the window size nor the sidebar; the inspector scrolls. Escape, a
+   click beside the page or a click on an empty slot deselects. On a sheet of 3 distinct landscape
+   photos, every card selects, drags and recentres on its own, even when clicked near its edge; a quick
+   flick-drag leaves no outline behind. The pointer turns into an open hand over an image that can move,
+   never over an image with the slot's exact ratio nor over an empty slot.
 10. Mix in an unreadable file (a .txt renamed .png): the banner reports it, *Détails* names it.
 
 ## Resize

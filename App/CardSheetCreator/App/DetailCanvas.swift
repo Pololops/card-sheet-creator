@@ -28,6 +28,8 @@ struct DetailCanvas: View {
             .padding(.top, Design.Metrics.canvasTopInset)
             .padding(.bottom, Design.Metrics.canvasBottomInset)
             .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
+            .contentShape(Rectangle())
+            .onTapGesture { selectedSlot = nil }
         }
         .scrollIndicators(.automatic)
         VStack(spacing: 12) {

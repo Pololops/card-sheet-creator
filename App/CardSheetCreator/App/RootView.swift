@@ -96,41 +96,32 @@ struct RootView: View {
     }
   }
 
+  /// Each mode declares its own items: swapping only the content of shared items leaves AppKit's
+  /// glass shadow stale until the next hover. The prominent item is the one main action of the view.
   @ToolbarContentBuilder
   private var toolbar: some ToolbarContent {
-    ToolbarItemGroup { secondaryActions }
-    ToolbarItem { primaryAction }
-  }
-
-  /// Grouped in one glass capsule by the system.
-  @ViewBuilder
-  private var secondaryActions: some View {
-    if resizeDraft == nil {
-      if model.selectedTemplate != nil {
-        Button("Nouveau gabarit", systemImage: "plus") { _ = model.createTemplate() }
-          .labelStyle(.titleAndIcon)
-        Button("Imprimer (sélectionne une planche)", systemImage: "printer") {}
-          .disabled(true)
-      } else {
-        Button("Nouvelle planche…", systemImage: "plus") { isNewSheetShown = true }
-          .labelStyle(.titleAndIcon)
-      }
-    }
-  }
-
-  /// The one prominent action of the view: create a sheet from a template, or print sheets.
-  @ViewBuilder
-  private var primaryAction: some View {
     if resizeDraft == nil {
       if let template = model.selectedTemplate {
-        Button("Créer une planche…", systemImage: "photo") { importTarget = template }
-          .labelStyle(.titleAndIcon)
-          .buttonStyle(.glassProminent)
+        ToolbarItem {
+          Button("Nouveau gabarit", systemImage: "plus") { _ = model.createTemplate() }
+            .labelStyle(.titleAndIcon)
+        }
+        ToolbarItem {
+          Button("Créer une planche…", systemImage: "photo") { importTarget = template }
+            .labelStyle(.titleAndIcon)
+            .buttonStyle(.glassProminent)
+        }
       } else {
-        Button("Imprimer", systemImage: "printer", action: openPrint)
-          .labelStyle(.titleAndIcon)
-          .buttonStyle(.glassProminent)
-          .disabled(model.selectedSheets.isEmpty)
+        ToolbarItem {
+          Button("Nouvelle planche…", systemImage: "plus") { isNewSheetShown = true }
+            .labelStyle(.titleAndIcon)
+        }
+        ToolbarItem {
+          Button("Imprimer", systemImage: "printer", action: openPrint)
+            .labelStyle(.titleAndIcon)
+            .buttonStyle(.glassProminent)
+            .disabled(model.selectedSheets.isEmpty)
+        }
       }
     }
   }

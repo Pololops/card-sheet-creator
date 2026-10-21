@@ -5,29 +5,35 @@ import SwiftUI
 struct ResizeInspector: View {
   @Bindable var draft: ResizeDraft
 
+  /// Scrolls rather than grows: the window derives its minimum height from this column.
   var body: some View {
-    VStack(alignment: .leading, spacing: 20) {
-      Text("Dimensions de la planche").font(Design.Typography.body.weight(.bold))
-      GeometryFields(geometry: $draft.geometry, original: draft.sheet.geometry)
-      VStack(alignment: .leading, spacing: 6) {
-        CapacityCard(geometry: draft.geometry, previousCapacity: draft.previousCapacity)
-        if draft.movedCount > 0, let capacity = draft.layout?.capacity {
-          Text(
-            "Les \(capacity) premières images restent ici, dans l'ordre. Les \(draft.movedCount) suivantes iront sur « \(draft.sheet.name) (suite) »."
-          )
-          .font(Design.Typography.callout)
-          .foregroundStyle(.secondary)
-          .fixedSize(horizontal: false, vertical: true)
+    VStack(alignment: .leading, spacing: 0) {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 20) {
+          Text("Dimensions de la planche").font(Design.Typography.body.weight(.bold))
+          GeometryFields(geometry: $draft.geometry, original: draft.sheet.geometry)
+          VStack(alignment: .leading, spacing: 6) {
+            CapacityCard(geometry: draft.geometry, previousCapacity: draft.previousCapacity)
+            if draft.movedCount > 0, let capacity = draft.layout?.capacity {
+              Text(
+                "Les \(capacity) premières images restent ici, dans l'ordre. Les \(draft.movedCount) suivantes iront sur « \(draft.sheet.name) (suite) »."
+              )
+              .font(Design.Typography.callout)
+              .foregroundStyle(.secondary)
+              .fixedSize(horizontal: false, vertical: true)
+            }
+          }
+          Text("Le cadrage de chaque image est conservé. Rien n'est enregistré avant « Valider ».")
+            .font(Design.Typography.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
       }
-      Text("Le cadrage de chaque image est conservé. Rien n'est enregistré avant « Valider ».")
-        .font(Design.Typography.caption)
-        .foregroundStyle(.secondary)
-        .fixedSize(horizontal: false, vertical: true)
-      Spacer(minLength: 0)
       Text("Échap annule · ↩ valide").font(Design.Typography.caption).foregroundStyle(.secondary)
+        .padding(16)
     }
-    .padding(16)
   }
 }
 
@@ -42,8 +48,9 @@ struct ResizeBar: View {
     HStack(spacing: 12) {
       if draft.movedCount > 0 {
         Image(systemName: "exclamationmark.triangle").foregroundStyle(Design.Palette.warning)
-        (Text("\(draft.movedCount) image\(draft.movedCount > 1 ? "s" : "")").fontWeight(.semibold)
-          + Text(" passer\(draft.movedCount > 1 ? "ont" : "a") sur une nouvelle planche"))
+        let isPlural = draft.movedCount > 1
+        let movedImages = Text("\(draft.movedCount) image\(isPlural ? "s" : "")").fontWeight(.semibold)
+        Text("\(movedImages) passer\(isPlural ? "ont" : "a") sur une nouvelle planche")
           .font(Design.Typography.body)
       } else {
         Text(

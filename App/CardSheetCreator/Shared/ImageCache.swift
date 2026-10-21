@@ -20,11 +20,16 @@ final class ImageCache {
   }
 
   func displaySize(of image: ImageRef) async -> PixelSize? {
-    if let size = sizes[image.sha256] { return size }
+    if let size = cachedDisplaySize(of: image) { return size }
     let url = url(for: image)
     let size = await Self.loadSize(image, url: url)
     sizes[image.sha256] = size
     return size
+  }
+
+  /// For gestures, which must update synchronously: a suspension would let the gesture end in between.
+  func cachedDisplaySize(of image: ImageRef) -> PixelSize? {
+    sizes[image.sha256]
   }
 
   func thumbnail(of image: ImageRef, maxPixelSize: Int) async -> CGImage? {

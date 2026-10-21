@@ -11,7 +11,8 @@ struct TemplateThumbnail: View {
       let scale = canvasSize.width / Page.a4.width.mm
       guard let layout = try? Domain.GridLayout.make(geometry) else { return }
       for slot in layout.slots {
-        context.stroke(Path(slot.scaled(scale)), with: .color(.secondary), lineWidth: 0.75)
+        context.stroke(
+          Path(slot.scaled(scale)), with: .color(Design.Palette.templateOutline), lineWidth: 0.75)
       }
     }
     .frame(width: size.width, height: size.height)

@@ -7,6 +7,8 @@ enum Design {
   enum Palette {
     static let canvas = dynamic(light: 0xDADADF, dark: 0x2B2B30)
     static let paper = Color.white
+    /// Fixed rather than semantic: drawn on the always-white paper, it must ignore the selected-row highlight.
+    static let templateOutline = Color.black.opacity(0.5)
     static let centerGuide = rgb(0xE5177E)
     static let marginHatch = rgb(0xFF9500).opacity(0.42)
     static let draftBackground = rgb(0xFFF4E5)

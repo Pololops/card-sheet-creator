@@ -16,6 +16,8 @@ public struct CropAnchor: Hashable, Sendable, Codable {
 public enum Crop {
   /// Within this distance of the center, a dragged image snaps to it.
   public static let snapDistance = Millimeters(tenths: 10)
+  /// Below this overflow (mm), the image already fits the slot's ratio and has nothing to reveal.
+  private static let overflowTolerance = 0.0001
 
   /// The image rect in slot coordinates (mm): it covers the whole slot and overflows on one axis.
   public static func coverRect(image: PixelSize, slot: SlotSize, anchor: CropAnchor) -> MMRect {
@@ -35,6 +37,12 @@ public enum Crop {
       y: moved(anchor.y, by: offset.dy, overflow: size.height - slot.height.mm))
   }
 
+  /// Whether dragging can reveal another part of the image: false when it has exactly the slot's ratio.
+  public static func canReframe(image: PixelSize, slot: SlotSize) -> Bool {
+    let size = coveredSize(image: image, slot: slot)
+    return size.width - slot.width.mm > overflowTolerance || size.height - slot.height.mm > overflowTolerance
+  }
+
   public static func isCentered(_ anchor: CropAnchor) -> Bool {
     anchor == .centered
   }
@@ -45,7 +53,7 @@ public enum Crop {
   }
 
   private static func moved(_ position: Double, by delta: Double, overflow: Double) -> Double {
-    guard overflow > 0.0001 else { return position }
+    guard overflow > overflowTolerance else { return position }
     let next = min(max(position - delta / overflow, 0), 1)
     let distanceFromCenter = abs(next - 0.5) * overflow
     return distanceFromCenter <= snapDistance.mm ? 0.5 : next

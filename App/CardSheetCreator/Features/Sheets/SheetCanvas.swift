@@ -40,6 +40,11 @@ struct SheetCanvas: View {
     .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow]) { press in
       nudge(press, contents: contents) ? .handled : .ignored
     }
+    .onKeyPress(.escape) {
+      guard selectedSlot != nil else { return .ignored }
+      selectedSlot = nil
+      return .handled
+    }
   }
 
   private func contents(capacity: Int) -> [ImageRef?] {
@@ -53,10 +58,12 @@ struct SheetCanvas: View {
     let isClone = drag != nil && !isActive && image != nil && image == drag?.image
     return SlotView(
       image: image, anchor: isActive ? drag?.anchor ?? .centered : image.map(sheet.crop(for:)) ?? .centered,
-      slotSize: geometry.slot, scale: scale, images: images
+      slotSize: geometry.slot, scale: scale, images: images, isDraggable: isEditable
     )
     .frame(width: frame.width, height: frame.height)
     .clipped()
+    // Clipping hides the overflowing image but keeps it hit-testable over the neighbouring slots.
+    .contentShape(Rectangle())
     .overlay {
       if isClone {
         Rectangle().strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])).padding(
@@ -67,7 +74,8 @@ struct SheetCanvas: View {
     }
     .offset(x: frame.minX, y: frame.minY)
     .gesture(dragGesture(index: index, image: image), including: isEditable && image != nil ? .all : .none)
-    .onTapGesture { if isEditable { selectedSlot = index } }
+    // Empty slots are hit-testable too, so a tap on one must deselect rather than select nothing.
+    .onTapGesture { if isEditable { selectedSlot = image == nil ? nil : index } }
     .accessibilityElement()
     .accessibilityLabel(slotLabel(index: index, image: image))
     .accessibilityAddTraits(selectedSlot == index ? [.isSelected, .isButton] : .isButton)
@@ -76,16 +84,12 @@ struct SheetCanvas: View {
   private func dragGesture(index: Int, image: ImageRef?) -> some Gesture {
     DragGesture(minimumDistance: 1)
       .onChanged { value in
-        guard let image else { return }
-        Task {
-          guard let size = await images.displaySize(of: image) else { return }
-          let start = sheet.crop(for: image)
-          let offset = MMOffset(dx: value.translation.width / scale, dy: value.translation.height / scale)
-          drag = ActiveDrag(
-            slot: index, image: image,
-            anchor: Crop.anchor(start, afterDragBy: offset, image: size, slot: geometry.slot))
-          selectedSlot = index
-        }
+        guard let image, let size = images.cachedDisplaySize(of: image) else { return }
+        let offset = MMOffset(dx: value.translation.width / scale, dy: value.translation.height / scale)
+        drag = ActiveDrag(
+          slot: index, image: image,
+          anchor: Crop.anchor(sheet.crop(for: image), afterDragBy: offset, image: size, slot: geometry.slot))
+        selectedSlot = index
       }
       .onEnded { _ in
         if let drag { onCropChange(drag.anchor, drag.image) }
@@ -133,6 +137,7 @@ struct SlotView: View {
   let slotSize: SlotSize
   let scale: Double
   let images: ImageCache
+  let isDraggable: Bool
 
   @Environment(\.displayScale) private var displayScale
   @State private var bitmap: CGImage?
@@ -151,11 +156,27 @@ struct SlotView: View {
       }
     }
     .frame(width: slotSize.width.mm * scale, height: slotSize.height.mm * scale, alignment: .topLeading)
+    // The hand only promises a drag that can move the image; the overflow stays out of the hover area.
+    .contentShape(Rectangle())
+    .pointerStyle(canReframe ? .grabIdle : nil)
     .task(id: image) {
+      // Slot views are reused across sheets: pixels must never outlive the image they were loaded for.
+      // A cancelled load still runs to completion, so its result is dropped rather than shown.
+      bitmap = nil
+      pixelSize = nil
       guard let image else { return }
-      pixelSize = await images.displaySize(of: image)
-      bitmap = await images.thumbnail(of: image, maxPixelSize: Self.maxPixels(slotSize, scale, displayScale))
+      let size = await images.displaySize(of: image)
+      let maxPixels = Self.maxPixels(slotSize, scale, displayScale)
+      let loaded = await images.thumbnail(of: image, maxPixelSize: maxPixels)
+      guard !Task.isCancelled else { return }
+      pixelSize = size
+      bitmap = loaded
     }
+  }
+
+  private var canReframe: Bool {
+    guard isDraggable, let pixelSize else { return false }
+    return Crop.canReframe(image: pixelSize, slot: slotSize)
   }
 
   /// Enough pixels for the slot at the current zoom, bucketed so zooming doesn't reload constantly.
@@ -176,9 +197,12 @@ private struct DragOverlay: View {
   var body: some View {
     let isCentered = Crop.isCentered(drag.anchor)
     ZStack(alignment: .topLeading) {
-      SlotView(image: drag.image, anchor: drag.anchor, slotSize: slotSize, scale: scale, images: images)
-        .opacity(0.3)
-        .offset(x: frame.minX, y: frame.minY)
+      SlotView(
+        image: drag.image, anchor: drag.anchor, slotSize: slotSize, scale: scale, images: images,
+        isDraggable: false
+      )
+      .opacity(0.3)
+      .offset(x: frame.minX, y: frame.minY)
       Rectangle()
         .strokeBorder(Color.accentColor, lineWidth: 2)
         .overlay {

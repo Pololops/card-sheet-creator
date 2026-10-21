@@ -8,20 +8,25 @@ struct SheetInspector: View {
   let selectedSlot: Int?
   let onEditDimensions: () -> Void
 
+  /// Scrolls rather than grows: the window derives its minimum height from this column.
   var body: some View {
-    VStack(alignment: .leading, spacing: 20) {
-      Text("Planche").font(Design.Typography.body.weight(.bold))
-      NameField(name: sheet.name) { model.rename(.sheet(sheet.id), to: $0) }
-      dimensions
-      if let image = selectedImage {
-        SelectedSlotSection(
-          sheet: sheet, image: image, slotNumber: (selectedSlot ?? 0) + 1, images: images,
-          onRecenter: { model.setCrop(.centered, for: image, inSheet: sheet.id) })
+    VStack(alignment: .leading, spacing: 0) {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 20) {
+          Text("Planche").font(Design.Typography.body.weight(.bold))
+          NameField(name: sheet.name) { model.rename(.sheet(sheet.id), to: $0) }
+          dimensions
+          if let image = selectedImage {
+            SelectedSlotSection(
+              sheet: sheet, image: image, slotNumber: (selectedSlot ?? 0) + 1, images: images,
+              onRecenter: { model.setCrop(.centered, for: image, inSheet: sheet.id) })
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
       }
-      Spacer(minLength: 0)
-      SavedFooter(date: sheet.updatedAt)
+      SavedFooter(date: sheet.updatedAt).padding(16)
     }
-    .padding(16)
   }
 
   private var selectedImage: ImageRef? {
@@ -116,31 +121,14 @@ private struct SelectedSlotSection: View {
       size.map {
         Double($0.width) / Double($0.height) > sheet.geometry.slot.width.mm / sheet.geometry.slot.height.mm
       } ?? true
-    let position = isHorizontal ? anchor.x : anchor.y
-    return VStack(alignment: .leading, spacing: 7) {
-      HStack {
-        Text(isHorizontal ? "Cadrage horizontal" : "Cadrage vertical")
-        Spacer()
-        Text(Crop.isCentered(anchor) ? "Centré" : "Décalé")
-          .fontWeight(.semibold)
-          .foregroundStyle(Crop.isCentered(anchor) ? Design.Palette.centerGuide : .secondary)
-      }
-      .font(Design.Typography.body)
-      GeometryReader { proxy in
-        ZStack(alignment: .leading) {
-          Capsule().fill(.quaternary).frame(height: 6)
-          Rectangle().fill(Design.Palette.centerGuide).frame(width: 1.5, height: 14)
-            .offset(x: proxy.size.width / 2)
-          Circle().fill(.white).shadow(color: .black.opacity(0.3), radius: 2, y: 1).frame(
-            width: 16, height: 16
-          )
-          .offset(x: proxy.size.width * position - 8)
-        }
-        .frame(height: 16)
-      }
-      .frame(height: 16)
-      .accessibilityHidden(true)
+    return HStack {
+      Text(isHorizontal ? "Cadrage horizontal" : "Cadrage vertical")
+      Spacer()
+      Text(Crop.isCentered(anchor) ? "Centré" : "Décalé")
+        .fontWeight(.semibold)
+        .foregroundStyle(Crop.isCentered(anchor) ? Design.Palette.centerGuide : .secondary)
     }
+    .font(Design.Typography.body)
   }
 
   private func effectiveDPI(_ size: PixelSize) -> Int {
