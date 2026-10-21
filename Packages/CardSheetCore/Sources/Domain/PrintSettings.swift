@@ -22,13 +22,16 @@ public struct PrintSettings: Hashable, Sendable, Codable {
   public var printerName: String?
   public var quality: PrintQuality
   public var driverSettings: [String: DriverSettings]
+  public var colorCalibrations: [String: PrinterCalibration]
 
   public init(
-    printerName: String? = nil, quality: PrintQuality = .best, driverSettings: [String: DriverSettings] = [:]
+    printerName: String? = nil, quality: PrintQuality = .best, driverSettings: [String: DriverSettings] = [:],
+    colorCalibrations: [String: PrinterCalibration] = [:]
   ) {
     self.printerName = printerName
     self.quality = quality
     self.driverSettings = driverSettings
+    self.colorCalibrations = colorCalibrations
   }
 
   public init(from decoder: any Decoder) throws {
@@ -38,5 +41,8 @@ public struct PrintSettings: Hashable, Sendable, Codable {
     // settings.json written before ADR 0011 has no driverSettings key.
     driverSettings =
       try container.decodeIfPresent([String: DriverSettings].self, forKey: .driverSettings) ?? [:]
+    // settings.json written before ADR 0012 has no colorCalibrations key.
+    colorCalibrations =
+      try container.decodeIfPresent([String: PrinterCalibration].self, forKey: .colorCalibrations) ?? [:]
   }
 }
