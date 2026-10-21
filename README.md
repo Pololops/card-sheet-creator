@@ -9,7 +9,7 @@ A 54 × 85.6 mm card comes out at 54 × 85.6 mm.
 
 [**⬇︎ Download for macOS**](https://github.com/Pololops/card-sheet-creator/releases/latest/download/CardSheetCreator.zip)
 
-macOS 26 or later · Apple silicon and Intel · Free and open source (MIT)
+macOS 26 or later · Apple silicon and Intel · Free · Source available
 
 </div>
 
@@ -85,4 +85,4 @@ scripts/release.sh 1.0.0   # universal build, ad-hoc signed, zipped, published a
 
 ## License
 
-[MIT](LICENSE)
+All rights reserved. See [LICENSE](LICENSE).

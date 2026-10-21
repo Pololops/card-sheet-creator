@@ -35,7 +35,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Card Sheet Creator
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
-        INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Pololops — MIT"
+        INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Paul Rigaudeau. Tous droits réservés."
         CODE_SIGN_ENTITLEMENTS: App/CardSheetCreator/Resources/CardSheetCreator.entitlements
         ENABLE_HARDENED_RUNTIME: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
