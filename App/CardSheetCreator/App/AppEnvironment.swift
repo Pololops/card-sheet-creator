@@ -9,6 +9,7 @@ final class AppEnvironment {
   let images: ImageCache
   let printService: AppKitPrintService
   let persistence: FileLibraryStore
+  let calibrationRoute = ColorCalibrationRoute()
 
   init() {
     let (failures, continuation) = AsyncStream<String>.makeStream()

@@ -158,7 +158,7 @@ final class PrintController {
     }
   }
 
-  private static func message(for error: Error) -> String {
+  static func message(for error: Error) -> String {
     switch error {
     case RenderError.unreadableImage(let image):
       "Image introuvable : \(image.originalName). L'impression est bloquée tant que l'image manque."

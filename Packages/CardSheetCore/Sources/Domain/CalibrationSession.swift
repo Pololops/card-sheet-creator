@@ -28,4 +28,9 @@ public struct CalibrationSession: Hashable, Sendable {
     guard let round = currentRound, round.variants.contains(variant) else { return }
     picks.append(variant)
   }
+
+  /// Reopens the round of the last pick; with no pick yet there is nothing to take back.
+  public mutating func undoLastPick() {
+    _ = picks.popLast()
+  }
 }

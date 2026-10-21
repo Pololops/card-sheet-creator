@@ -83,4 +83,25 @@ import Testing
 
     #expect(session.result == ColorCorrection(brightness: 1))
   }
+
+  @Test func undoReopensTheLastRound() throws {
+    var session = CalibrationSession(rounds: [.brightness, .contrast], startingFrom: .neutral)
+    session.pick(try variant("E", of: .brightness))
+    session.pick(try variant("B", of: .contrast))
+
+    session.undoLastPick()
+
+    #expect(session.currentRound == .contrast)
+    #expect(!session.isComplete)
+    #expect(session.result == ColorCorrection(brightness: 1))
+  }
+
+  @Test func undoWithoutPicksChangesNothing() {
+    var session = CalibrationSession(rounds: [.brightness], startingFrom: .neutral)
+
+    session.undoLastPick()
+
+    #expect(session.picks.isEmpty)
+    #expect(session.currentRound == .brightness)
+  }
 }

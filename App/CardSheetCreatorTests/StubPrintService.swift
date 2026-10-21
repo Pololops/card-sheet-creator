@@ -12,6 +12,8 @@ final class StubPrintService: PrintService {
   var panelChoice: DriverChoice?
   /// The queues that print in colour; `nil` makes every queue a colour printer.
   var colorPrinters: Set<String>?
+  /// Thrown by `print` while set, like a printer that switched off or ran out of paper.
+  var failure: PrintError?
   private(set) var printedCopies: [Int] = []
   /// The PDF bytes and settings of each job, read before the caller deletes its temporary file.
   private(set) var printedPDFs: [Data] = []
@@ -30,6 +32,7 @@ final class StubPrintService: PrintService {
   func chooseDriverSettings(for settings: PrintSettings, copies: Int) -> DriverChoice? { panelChoice }
 
   func print(pdfAt url: URL, settings: PrintSettings, copies: Int) throws {
+    if let failure { throw failure }
     printedCopies.append(copies)
     printedPDFs.append(try Data(contentsOf: url))
     printedSettings.append(settings)
