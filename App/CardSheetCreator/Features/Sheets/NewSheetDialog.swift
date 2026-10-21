@@ -1,6 +1,5 @@
 import Domain
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// ⇧⌘N: pick a template, then the images to place.
 struct NewSheetDialog: View {
@@ -78,7 +77,7 @@ struct NewSheetDialog: View {
         Image(systemName: "square.grid.3x3")
       }
       Text(
-        "PNG, JPEG, HEIC, TIFF ou PDF (1re page). Tu peux aussi glisser des images du Finder sur un gabarit."
+        "PNG, JPEG, HEIC, TIFF, WebP, GIF, BMP, AVIF ou PDF (1re page). Tu peux aussi glisser des images du Finder sur un gabarit."
       )
       .font(Design.Typography.caption)
       .foregroundStyle(.secondary)
@@ -141,9 +140,4 @@ private struct AlignedLabelStyle: LabelStyle {
       configuration.title.fixedSize(horizontal: false, vertical: true)
     }
   }
-}
-
-extension UTType {
-  /// Image formats a sheet accepts.
-  static let cardImages: [UTType] = [.png, .jpeg, .heic, .heif, .tiff, .pdf]
 }

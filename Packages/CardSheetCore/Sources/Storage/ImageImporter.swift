@@ -7,8 +7,6 @@ import UniformTypeIdentifiers
 
 /// Copies picked files into the library, keyed by content hash, after checking they decode.
 struct ImageImporter {
-  private static let supportedTypes: [UTType] = [.png, .jpeg, .heic, .heif, .tiff, .pdf]
-
   let directory: URL
 
   func importImages(at urls: [URL]) -> ImportReport {
@@ -26,7 +24,7 @@ struct ImageImporter {
   private func importImage(at url: URL) throws(SkipReason) -> ImageRef {
     let fileExtension = url.pathExtension.lowercased()
     guard let type = UTType(filenameExtension: fileExtension),
-      Self.supportedTypes.contains(where: { type.conforms(to: $0) })
+      UTType.cardImages.contains(where: { type.conforms(to: $0) })
     else { throw .unsupportedFormat }
 
     let isScoped = url.startAccessingSecurityScopedResource()
@@ -62,3 +60,10 @@ struct ImageImporter {
 }
 
 extension SkipReason: Error {}
+
+extension UTType {
+  /// Image formats a sheet accepts: what ImageIO decodes, plus the first page of a PDF.
+  public static let cardImages: [UTType] = [
+    .png, .jpeg, .heic, .heif, .tiff, .webP, .gif, .bmp, UTType(importedAs: "public.avif"), .pdf,
+  ]
+}

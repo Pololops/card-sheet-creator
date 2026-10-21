@@ -22,6 +22,10 @@ struct TemporaryLibrary {
   }
 
   func pickedPNG(named name: String, gray: CGFloat = 0.5) throws -> URL {
+    try pickedImage(named: name, type: .png, gray: gray)
+  }
+
+  func pickedImage(named name: String, type: UTType, gray: CGFloat = 0.5) throws -> URL {
     guard
       let context = CGContext(
         data: nil, width: 8, height: 8, bitsPerComponent: 8, bytesPerRow: 0,
@@ -32,7 +36,7 @@ struct TemporaryLibrary {
     let url = picked.appendingPathComponent(name)
     guard let image = context.makeImage(),
       let destination = CGImageDestinationCreateWithURL(
-        url as CFURL, UTType.png.identifier as CFString, 1, nil)
+        url as CFURL, type.identifier as CFString, 1, nil)
     else { throw TestFileError.cannotCreate }
     CGImageDestinationAddImage(destination, image, nil)
     guard CGImageDestinationFinalize(destination) else { throw TestFileError.cannotCreate }

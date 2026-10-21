@@ -148,6 +148,14 @@ import Testing
       ])
   }
 
+  @Test func gifImagesAreImported() async throws {
+    let gif = try library.pickedImage(named: "étoile.gif", type: .gif)
+
+    let report = await makeStore().importImages(at: [gif])
+
+    #expect(report.imported.map(\.originalName) == ["étoile.gif"])
+  }
+
   @Test func importedImageIsReadableAtItsLibraryURL() async throws {
     let store = makeStore()
     let report = await store.importImages(at: [try library.pickedPNG(named: "lune.png")])
