@@ -60,7 +60,7 @@ private struct StepPill: View {
 
   private var marker: some View {
     ZStack {
-      Circle().fill(state == .current ? Color.accentColor : Color.secondary.opacity(0.18))
+      Circle().fill(state == .current ? Color.accentColor : Design.Palette.progressTrack)
       if state == .done {
         Image(systemName: "checkmark").foregroundStyle(Design.Palette.success)
       } else {

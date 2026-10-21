@@ -72,7 +72,7 @@ struct CompareStep: View {
       HStack(spacing: 5) {
         ForEach(session.rounds.indices, id: \.self) { index in
           Circle()
-            .fill(index <= session.picks.count ? Color.accentColor : Color.secondary.opacity(0.18))
+            .fill(index <= session.picks.count ? Color.accentColor : Design.Palette.progressTrack)
             .frame(width: 8, height: 8)
         }
       }

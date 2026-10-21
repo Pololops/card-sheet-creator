@@ -20,6 +20,8 @@ enum Design {
     /// Neutral grey around a colour reference: fixed, so the surround never biases the eye in dark mode.
     static let referenceFrame = rgb(0x808080)
     static let success = dynamic(light: 0x2C6E3F, dark: 0x5BD27A)
+    /// The unfilled part of a step marker, a progress dot or the drying ring.
+    static let progressTrack = Color.secondary.opacity(0.18)
     static let currentStep = Color.accentColor.opacity(0.12)
     /// The invitation to calibrate: tinted like the accent, never glass, readable in light and dark.
     static let offerBackground = Color.accentColor.opacity(0.14)
