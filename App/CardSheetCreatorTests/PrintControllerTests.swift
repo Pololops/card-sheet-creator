@@ -6,30 +6,6 @@ import Testing
 
 @testable import CardSheetCreator
 
-/// Stands in for the system at the printer boundary: queues, drivers, the panel and the paper.
-@MainActor
-private final class StubPrintService: PrintService {
-  var printers: [String]
-  var fingerprints: [String: String]
-  var panelChoice: DriverChoice?
-  private(set) var printedCopies: [Int] = []
-
-  init(printers: [String], fingerprints: [String: String]) {
-    self.printers = printers
-    self.fingerprints = fingerprints
-  }
-
-  var defaultPrinterName: String? { printers.first }
-  func printerNames() -> [String] { printers }
-  func isReady(printerNamed name: String) -> Bool? { true }
-  func driverFingerprint(printerNamed name: String) -> String? { fingerprints[name] }
-  func chooseDriverSettings(for settings: PrintSettings, copies: Int) -> DriverChoice? { panelChoice }
-
-  func print(pdfAt url: URL, settings: PrintSettings, copies: Int) throws {
-    printedCopies.append(copies)
-  }
-}
-
 @MainActor @Suite struct PrintControllerTests {
   private static let canon = "Canon G5000 series"
   private static let epson = "Epson XP-2100"
