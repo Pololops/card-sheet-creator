@@ -47,6 +47,17 @@ struct ImageFixtures {
     return url
   }
 
+  /// In-memory bitmap of square stripes side by side, one per colour, in the given colour space.
+  func stripes(of colors: [CGColor], size: Int, colorSpace: CGColorSpace = Palette.sRGB) throws -> CGImage {
+    let context = try requireContext(width: size * colors.count, height: size, colorSpace: colorSpace)
+    for (index, color) in colors.enumerated() {
+      context.setFillColor(color)
+      context.fill(CGRect(x: index * size, y: 0, width: size, height: size))
+    }
+    guard let image = context.makeImage() else { throw FixtureError.cannotDraw }
+    return image
+  }
+
   private func requireContext(width: Int, height: Int, colorSpace: CGColorSpace) throws -> CGContext {
     guard
       let context = CGContext(
