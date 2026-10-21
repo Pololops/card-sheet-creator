@@ -1,6 +1,6 @@
 # 5. One Core Graphics PDF renderer, one crop function
 
-- Status: accepted
+- Status: accepted — partially superseded by [ADR 0012](0012-visual-colour-calibration.md): the printed PDF can carry a colour correction
 - Date: 2026-10-20
 
 ## Context
