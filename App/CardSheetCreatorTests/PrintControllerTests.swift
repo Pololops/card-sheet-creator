@@ -156,4 +156,86 @@ import Testing
 
     #expect(printer.printedCopies == [1])
   }
+
+  // MARK: - Colour correction
+
+  private func calibration(
+    isApplied: Bool = true, driver: DriverSettings? = nil, fingerprint: String? = "canon-1"
+  ) -> PrinterCalibration {
+    PrinterCalibration(
+      correction: ColorCorrection(brightness: 3), isApplied: isApplied,
+      calibratedAt: Date(timeIntervalSince1970: 1_000), driver: driver, fingerprint: fingerprint,
+      quality: .best)
+  }
+
+  private func calibratedSettings(_ calibration: PrinterCalibration, driver: DriverSettings? = nil)
+    -> PrintSettings
+  {
+    PrintSettings(
+      printerName: Self.canon, driverSettings: driver.map { [Self.canon: $0] } ?? [:],
+      colorCalibrations: [Self.canon: calibration])
+  }
+
+  private func savedAppearance(of controller: PrintController) async throws -> Data {
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).pdf")
+    defer { try? FileManager.default.removeItem(at: url) }
+    #expect(await controller.exportPDF(to: url))
+    return try #require(PrintedPDF.pageAppearance(try Data(contentsOf: url)))
+  }
+
+  private func printedAppearance(of printer: StubPrintService) throws -> Data {
+    try #require(printer.printedPDFs.last.flatMap(PrintedPDF.pageAppearance))
+  }
+
+  @Test func appliedCorrectionReachesThePrinterButNotTheSavedPDF() async throws {
+    let (controller, printer) = try await makeController(saved: calibratedSettings(calibration()))
+
+    #expect(await controller.print())
+    let saved = try await savedAppearance(of: controller)
+
+    #expect(try printedAppearance(of: printer) != saved)
+  }
+
+  @Test func switchedOffCorrectionPrintsLikeTheSavedPDF() async throws {
+    let (controller, printer) = try await makeController(saved: calibratedSettings(calibration()))
+    controller.setCorrectionApplied(false)
+
+    #expect(await controller.print())
+    let saved = try await savedAppearance(of: controller)
+
+    #expect(try printedAppearance(of: printer) == saved)
+    #expect(controller.colorCalibration?.isApplied == false)
+  }
+
+  @Test func changedDriverOptionsFlagTheCorrectionAsOutdated() async throws {
+    let (controller, printer) = try await makeController(saved: calibratedSettings(calibration()))
+    #expect(!controller.isColorCalibrationOutdated)
+    printer.panelChoice = choice()
+
+    controller.editDriverSettings()
+
+    #expect(controller.isColorCalibrationOutdated)
+  }
+
+  @Test func driverChangeOnOpenKeepsTheCorrection() async throws {
+    let calibrated = calibration(driver: driver("canon-0"), fingerprint: "canon-0")
+
+    let (controller, _) = try await makeController(
+      saved: calibratedSettings(calibrated, driver: driver("canon-0")))
+
+    #expect(controller.wasDriverReset)
+    #expect(controller.colorCalibration == calibrated)
+    #expect(controller.isColorCalibrationOutdated)
+  }
+
+  @Test func resettingForgetsOnlyTheSelectedPrintersCorrection() async throws {
+    var saved = calibratedSettings(calibration())
+    saved.colorCalibrations[Self.epson] = calibration(fingerprint: "epson-1")
+    let (controller, _) = try await makeController(saved: saved)
+
+    controller.resetColorCalibration()
+
+    #expect(controller.colorCalibration == nil)
+    #expect(Set(controller.settings.colorCalibrations.keys) == [Self.epson])
+  }
 }

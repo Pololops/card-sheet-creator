@@ -13,6 +13,9 @@ final class StubPrintService: PrintService {
   /// The queues that print in colour; `nil` makes every queue a colour printer.
   var colorPrinters: Set<String>?
   private(set) var printedCopies: [Int] = []
+  /// The PDF bytes and settings of each job, read before the caller deletes its temporary file.
+  private(set) var printedPDFs: [Data] = []
+  private(set) var printedSettings: [PrintSettings] = []
 
   init(printers: [String], fingerprints: [String: String]) {
     self.printers = printers
@@ -28,5 +31,7 @@ final class StubPrintService: PrintService {
 
   func print(pdfAt url: URL, settings: PrintSettings, copies: Int) throws {
     printedCopies.append(copies)
+    printedPDFs.append(try Data(contentsOf: url))
+    printedSettings.append(settings)
   }
 }
