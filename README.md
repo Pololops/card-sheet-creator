@@ -27,6 +27,8 @@ macOS 26 or later · Apple silicon and Intel · Free and open source (MIT)
   Keep the new size as a template if you like.
 - **Exact-size printing** — standard A4, forced 100 % scale, no "fit to page", draft or best quality.
   Or save the sheets as a PDF.
+- **Printer options** — open the printer's own options (paper type, ink saving, copies…) from the print
+  dialog; cards still print at their exact size, whatever the driver offers.
 - **Always saved** — every change is written as you go, and ⌘Z undoes it.
 
 Formats: PNG, JPEG, HEIC, TIFF and PDF (first page).

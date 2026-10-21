@@ -9,11 +9,18 @@ import Storage
 @Observable
 final class PrintController {
   let sheets: [Sheet]
-  let printers: [String]
+  private(set) var printers: [String]
   var settings: PrintSettings
+  /// Copies chosen in the print panel: they only last for this dialog, never reaching `settings`.
+  private(set) var copies = 1
+  /// Panel choices the exact-size guarantee refused; shown once, never persisted.
+  private(set) var overrides: Set<ExactSizeOverride> = []
+  private(set) var wasDriverReset = false
   private(set) var failure: String?
   private(set) var isWorking = false
 
+  /// Looked up when the printer changes, not while rendering: asking the driver is slow.
+  @ObservationIgnored private var fingerprint: String?
   @ObservationIgnored private let printService: any PrintService
   @ObservationIgnored private let renderer: SheetRenderer
 
@@ -22,17 +29,25 @@ final class PrintController {
   ) {
     self.sheets = sheets
     self.printService = printService
-    printers = printService.printerNames()
+    let printers = printService.printerNames()
     var settings = saved
     if settings.printerName.map(printers.contains) != true {
       settings.printerName = printService.defaultPrinterName ?? printers.first
     }
+    self.printers = printers
     self.settings = settings
     renderer = SheetRenderer(imageURL: { persistence.imageURL(for: $0) })
+    refreshDriverState()
   }
 
   var title: String { "Imprimer \(sheets.count) planche\(sheets.count > 1 ? "s" : "")" }
   var isPrinterReady: Bool? { settings.printerName.flatMap(printService.isReady(printerNamed:)) }
+
+  /// An unreachable printer (no fingerprint) keeps its stored settings, but they stay inactive.
+  var isDriverControlled: Bool {
+    guard let name = settings.printerName, let stored = settings.driverSettings[name] else { return false }
+    return stored.fingerprint == fingerprint
+  }
 
   /// Slot size of the first sheet, quoted in the size guarantee.
   var cardSize: String {
@@ -40,15 +55,55 @@ final class PrintController {
     return "\(slot.width.formatted) × \(slot.height.formatted) mm"
   }
 
+  func selectPrinter(_ name: String?) {
+    settings.printerName = name
+    overrides = []
+    copies = 1
+    wasDriverReset = false
+    refreshDriverState()
+  }
+
+  func editDriverSettings() {
+    guard let choice = printService.chooseDriverSettings(for: settings, copies: copies) else { return }
+    printers = printService.printerNames()
+    settings.printerName = choice.printerName
+    settings.driverSettings[choice.printerName] = choice.driver
+    copies = choice.copies
+    overrides = choice.overrides
+    fingerprint = choice.driver.fingerprint
+    wasDriverReset = false
+  }
+
+  func resetDriverSettings() {
+    guard let name = settings.printerName else { return }
+    settings.driverSettings[name] = nil
+    overrides = []
+    copies = 1
+    wasDriverReset = false
+  }
+
   func print() async -> Bool {
     await run { url in
       try await renderer.renderPDF(try pages(), to: url)
-      try printService.print(pdfAt: url, settings: settings)
+      try printService.print(pdfAt: url, settings: settings, copies: copies)
     }
   }
 
   func exportPDF(to destination: URL) async -> Bool {
     await run { _ in try await renderer.renderPDF(try pages(), to: destination) }
+  }
+
+  /// Drops the printer's advanced settings once its driver is known to have changed.
+  private func refreshDriverState() {
+    guard let name = settings.printerName else {
+      fingerprint = nil
+      return
+    }
+    fingerprint = printService.driverFingerprint(printerNamed: name)
+    guard let fingerprint, let stored = settings.driverSettings[name], stored.fingerprint != fingerprint
+    else { return }
+    settings.driverSettings[name] = nil
+    wasDriverReset = true
   }
 
   private func pages() throws -> [RenderPage] {

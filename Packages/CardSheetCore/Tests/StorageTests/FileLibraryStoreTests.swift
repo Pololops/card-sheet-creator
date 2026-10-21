@@ -54,6 +54,28 @@ import Testing
     #expect(try await makeStore().loadAll().printSettings == settings)
   }
 
+  @Test func driverSettingsSurviveARelaunch() async throws {
+    let store = makeStore()
+    let driver = DriverSettings(data: Data([0x01, 0x02, 0x03]), fingerprint: "Canon G5000 series|1.0")
+    let settings = PrintSettings(
+      printerName: "Canon G5000 series", quality: .draft, driverSettings: ["Canon G5000 series": driver])
+    await store.save(settings)
+    try await store.flush()
+
+    #expect(try await makeStore().loadAll().printSettings == settings)
+  }
+
+  @Test func settingsWrittenBeforeDriverSettingsStillLoad() async throws {
+    try FileManager.default.createDirectory(at: library.root, withIntermediateDirectories: true)
+    let legacyJSON = #"{"schemaVersion":1,"payload":{"printerName":"Canon G5000 series","quality":"draft"}}"#
+    try Data(legacyJSON.utf8).write(to: library.root.appendingPathComponent("settings.json"))
+
+    let settings = try await makeStore().loadAll().printSettings
+
+    #expect(settings.quality == .draft)
+    #expect(settings.driverSettings.isEmpty)
+  }
+
   @Test func writesLeaveNoTemporaryFileBehind() async throws {
     let store = makeStore()
     await store.save(template)

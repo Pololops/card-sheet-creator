@@ -8,12 +8,32 @@ public enum PrintError: Error, Equatable, Sendable {
   case failed
 }
 
+/// What the user confirmed in the print panel, already sanitised for exact-size printing.
+public struct DriverChoice: Equatable, Sendable {
+  public var printerName: String
+  public var driver: DriverSettings
+  public var copies: Int
+  /// Choices the panel made that exact-size printing refuses; they are not part of `driver`.
+  public var overrides: Set<ExactSizeOverride>
+
+  public init(printerName: String, driver: DriverSettings, copies: Int, overrides: Set<ExactSizeOverride>) {
+    self.printerName = printerName
+    self.driver = driver
+    self.copies = copies
+    self.overrides = overrides
+  }
+}
+
 @MainActor
 public protocol PrintService {
   func printerNames() -> [String]
   var defaultPrinterName: String? { get }
   func isReady(printerNamed name: String) -> Bool?
-  func print(pdfAt url: URL, settings: PrintSettings) throws
+  /// `nil` when the printer can't be reached.
+  func driverFingerprint(printerNamed name: String) -> String?
+  /// Opens the system print panel; `nil` when the user cancels or the printer can't be reached.
+  func chooseDriverSettings(for settings: PrintSettings, copies: Int) -> DriverChoice?
+  func print(pdfAt url: URL, settings: PrintSettings, copies: Int) throws
 }
 
 /// Prints the rendered PDF without the system panel, so nobody can turn on "scale to fit".
@@ -31,85 +51,81 @@ public final class AppKitPrintService: PrintService {
 
   /// `nil` when the queue can't be found; `false` when it is stopped (paused, out of paper, error).
   public func isReady(printerNamed name: String) -> Bool? {
-    var list: Unmanaged<CFArray>?
-    guard PMServerCreatePrinterList(nil, &list) == noErr, let printers = list?.takeRetainedValue() else {
-      return nil
-    }
-    for index in 0..<CFArrayGetCount(printers) {
-      guard let raw = CFArrayGetValueAtIndex(printers, index) else { continue }
-      let printer = OpaquePointer(raw)
-      guard let printerName = PMPrinterGetName(printer) as String?, printerName == name
-      else { continue }
+    let isReady = withPrinter(named: name) { printer -> Bool? in
       var state = PMPrinterState(kPMPrinterIdle)
       guard PMPrinterGetState(printer, &state) == noErr else { return nil }
       return state != PMPrinterState(kPMPrinterStopped)
     }
-    return nil
+    return isReady ?? nil
   }
 
-  public func print(pdfAt url: URL, settings: PrintSettings) throws {
+  public func driverFingerprint(printerNamed name: String) -> String? {
+    PrinterFingerprint.current(printerNamed: name)
+  }
+
+  public func chooseDriverSettings(for settings: PrintSettings, copies: Int) -> DriverChoice? {
+    let info = makePrintInfo(settings: settings, driver: activeDriver(for: settings), copies: copies)
+    let panel = NSPrintPanel()
+    panel.options = [.showsCopies]
+    panel.setDefaultButtonTitle("Appliquer")
+    guard panel.runModal(with: info) == NSApplication.ModalResponse.OK.rawValue,
+      let fingerprint = PrinterFingerprint.current(printerNamed: info.printer.name)
+    else { return nil }
+    return makeChoice(from: info, fingerprint: fingerprint)
+  }
+
+  public func print(pdfAt url: URL, settings: PrintSettings, copies: Int) throws {
     if let name = settings.printerName, NSPrinter(name: name) == nil {
       throw PrintError.printerUnavailable(name)
     }
     guard let document = PDFDocument(url: url) else { throw PrintError.unreadableDocument }
-    guard
-      let operation = document.printOperation(
-        for: makePrintInfo(settings: settings), scalingMode: .pageScaleNone, autoRotate: false)
+    let info = makePrintInfo(settings: settings, driver: activeDriver(for: settings), copies: copies)
+    guard let operation = document.printOperation(for: info, scalingMode: .pageScaleNone, autoRotate: false)
     else { throw PrintError.failed }
     operation.showsPrintPanel = false
     operation.showsProgressPanel = true
     guard operation.run() else { throw PrintError.failed }
   }
 
-  func makePrintInfo(settings: PrintSettings) -> NSPrintInfo {
+  /// The order is the invariant: printer, then restored driver settings (or the app's quality), then the
+  /// exact-size guard, which has the last word.
+  func makePrintInfo(settings: PrintSettings, driver: DriverSettings?, copies: Int) -> NSPrintInfo {
     let info = NSPrintInfo()
     if let name = settings.printerName, let printer = NSPrinter(name: name) {
       info.printer = printer
     }
-    selectStandardA4(in: info)
-    info.orientation = .portrait
-    info.topMargin = 0
-    info.bottomMargin = 0
-    info.leftMargin = 0
-    info.rightMargin = 0
-    info.scalingFactor = 1
-    info.horizontalPagination = .clip
-    info.verticalPagination = .clip
-    info.isHorizontallyCentered = false
-    info.isVerticallyCentered = false
-    applyQuality(settings.quality, to: info)
+    let isDriverControlled = driver.map { ExactSizeGuard.restore($0, into: info) } ?? false
+    if !isDriverControlled {
+      applyQuality(settings.quality, to: info)
+    }
+    ExactSizeGuard.enforce(on: info, copies: copies)
     return info
   }
 
-  private func selectStandardA4(in info: NSPrintInfo) {
-    info.paperSize = NSSize(width: Page.a4.width.points, height: Page.a4.height.points)
-    let session = OpaquePointer(info.pmPrintSession())
-    var printer: PMPrinter?
-    var paperList: Unmanaged<CFArray>?
-    guard PMSessionGetCurrentPrinter(session, &printer) == noErr, let printer,
-      PMPrinterGetPaperList(printer, &paperList) == noErr, let paperArray = paperList?.takeUnretainedValue()
-    else { return }
-    let papers: [PMPaper] = (0..<CFArrayGetCount(paperArray)).compactMap { index in
-      CFArrayGetValueAtIndex(paperArray, index).map { OpaquePointer($0) }
-    }
+  /// Overrides are read on the raw panel output, before the layout is reset and the copies stripped:
+  /// the stored data must neither scale nor repeat, whatever the panel was left on.
+  func makeChoice(from info: NSPrintInfo, fingerprint: String) -> DriverChoice? {
+    let settings = OpaquePointer(info.pmPrintSettings())
+    var copies: UInt32 = 1
+    PMGetCopies(settings, &copies)
+    let overrides = ExactSizeGuard.overrides(in: settings)
+    ExactSizeGuard.resetLayout(settings)
+    PMSetCopies(settings, 1, false)
+    var data: Unmanaged<CFData>?
+    guard PMPrintSettingsCreateDataRepresentation(settings, &data, kPMDataFormatXMLCompressed) == noErr,
+      let data
+    else { return nil }
+    let driver = DriverSettings(data: data.takeRetainedValue() as Data, fingerprint: fingerprint)
+    return DriverChoice(
+      printerName: info.printer.name, driver: driver, copies: Int(copies), overrides: overrides)
+  }
 
-    let candidates = papers.map { paper in
-      var id: Unmanaged<CFString>?
-      var name: Unmanaged<CFString>?
-      _ = PMPaperGetID(paper, &id)
-      _ = PMPaperCreateLocalizedName(paper, printer, &name)
-      return Paper(
-        id: id?.takeUnretainedValue() as String? ?? "", name: name?.takeRetainedValue() as String? ?? "")
-    }
-    guard let chosen = PaperSelection.standardA4(in: candidates),
-      let index = candidates.firstIndex(of: chosen)
-    else { return }
-
-    var format: PMPageFormat?
-    guard PMCreatePageFormatWithPMPaper(&format, papers[index]) == noErr, let format else { return }
-    defer { PMRelease(UnsafeRawPointer(format)) }
-    PMCopyPageFormat(format, OpaquePointer(info.pmPageFormat()))
-    info.updateFromPMPageFormat()
+  /// Stored driver settings are only trusted while the queue's driver is the one they were made for.
+  private func activeDriver(for settings: PrintSettings) -> DriverSettings? {
+    guard let name = settings.printerName, let stored = settings.driverSettings[name],
+      PrinterFingerprint.current(printerNamed: name) == stored.fingerprint
+    else { return nil }
+    return stored
   }
 
   /// Best effort: drivers that don't know these keys simply print at their default quality.

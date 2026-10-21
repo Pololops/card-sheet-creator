@@ -42,7 +42,22 @@ Run before each release, on the Canon G5000 series and at least one other printe
     Measure a card on paper: 54 × 85.6 mm ± 0.5 mm. No outline, guide or mark is printed.
 13. *Enregistrer en PDF…*: the PDF opens in Preview at A4, cards at exact size.
 
+### Driver options (Canon G5000 series)
+
+14. ⌘P → *Options de l'imprimante…*: the native panel opens with *Appliquer* as its button, copies
+    visible, no page range, paper size, orientation or scale. Tick *Ajuster à la page*, 2 pages per
+    sheet, 3 copies, then *Appliquer*: both orange warnings show, and the line "Réglages avancés de la
+    dernière impression actifs · 3 copies" with *Réinitialiser*. The quality picker reads
+    "Réglée par le pilote". Close and reopen ⌘P: the warnings are gone.
+15. Print with those settings: 3 copies, one sheet per page, card 54 × 85.6 mm ± 0.5 mm.
+16. Quit and relaunch, ⌘P: the line is active without "3 copies"; the panel opens at 1 copy.
+17. Choose another printer in the panel: the dialog's picker follows. *Réinitialiser* then clears only
+    the selected printer's advanced settings; the quality picker comes back.
+18. Quit, change the stored `fingerprint` in `settings.json`, relaunch, ⌘P: "Réglages avancés
+    réinitialisés : le pilote a changé", quality picker back, basic settings kept.
+19. With advanced settings active, print the calibration page: the measurements of steps 1–3 hold.
+
 ## Release
 
-14. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
+20. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.

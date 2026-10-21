@@ -3,7 +3,7 @@ import Domain
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// ⌘P: printer, quality and a locked 100 % A4 layout so cards come out at their exact size.
+/// ⌘P: printer, its driver options, quality and a locked 100 % A4 layout so cards come out at their exact size.
 struct PrintDialog: View {
   @Bindable var controller: PrintController
   let images: ImageCache
@@ -40,7 +40,8 @@ struct PrintDialog: View {
     .padding(24)
     .frame(width: 540)
     .disabled(controller.isWorking)
-    .onChange(of: controller.settings) { _, settings in onSettingsChange(settings) }
+    // `initial` persists a stale driver entry the controller dropped while opening.
+    .onChange(of: controller.settings, initial: true) { _, settings in onSettingsChange(settings) }
   }
 
   private var previews: some View {
@@ -68,18 +69,12 @@ struct PrintDialog: View {
         printerRow
       }
       GridRow {
+        Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        DriverSettingsRow(controller: controller)
+      }
+      GridRow {
         Text("Qualité")
-        VStack(alignment: .leading, spacing: 5) {
-          Picker("Qualité", selection: $controller.settings.quality) {
-            Text("Brouillon").tag(PrintQuality.draft)
-            Text("Optimale").tag(PrintQuality.best)
-          }
-          .pickerStyle(.segmented)
-          .labelsHidden()
-          .fixedSize()
-          Text("Appliquée si l'imprimante la prend en charge.")
-            .font(Design.Typography.caption).foregroundStyle(.secondary)
-        }
+        qualityControl
       }
       GridRow {
         Text("Mise en page")
@@ -89,6 +84,29 @@ struct PrintDialog: View {
       }
     }
     .font(Design.Typography.body)
+  }
+
+  @ViewBuilder
+  private var qualityControl: some View {
+    if controller.isDriverControlled {
+      Text("Réglée par le pilote").foregroundStyle(.secondary)
+    } else {
+      VStack(alignment: .leading, spacing: 5) {
+        Picker("Qualité", selection: $controller.settings.quality) {
+          Text("Brouillon").tag(PrintQuality.draft)
+          Text("Optimale").tag(PrintQuality.best)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
+        Text("Appliquée si l'imprimante la prend en charge.")
+          .font(Design.Typography.caption).foregroundStyle(.secondary)
+      }
+    }
+  }
+
+  private var printerSelection: Binding<String?> {
+    Binding(get: { controller.settings.printerName }, set: controller.selectPrinter)
   }
 
   @ViewBuilder
@@ -104,7 +122,7 @@ struct PrintDialog: View {
       }
     } else {
       HStack(spacing: 10) {
-        Picker("Imprimante", selection: $controller.settings.printerName) {
+        Picker("Imprimante", selection: printerSelection) {
           ForEach(controller.printers, id: \.self) { Text($0).tag(Optional($0)) }
         }
         .labelsHidden()

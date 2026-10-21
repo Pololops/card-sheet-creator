@@ -1,6 +1,6 @@
 # 6. Exact-size printing on standard A4
 
-- Status: accepted — to confirm with the calibration page on the Canon G5000 series
+- Status: accepted — to confirm with the calibration page on the Canon G5000 series; superseded in part by [0011](0011-driver-settings-through-native-panel.md)
 - Date: 2026-10-20
 
 ## Context

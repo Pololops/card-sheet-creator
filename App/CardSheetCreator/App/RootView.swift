@@ -181,7 +181,7 @@ struct RootView: View {
     Task {
       do {
         try await CalibrationPage.renderPDF(to: url)
-        try environment.printService.print(pdfAt: url, settings: settings)
+        try environment.printService.print(pdfAt: url, settings: settings, copies: 1)
       } catch {
         calibrationFailure = "La page de calibration n'a pas pu être imprimée : \(error.localizedDescription)"
       }
