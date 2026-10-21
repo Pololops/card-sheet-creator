@@ -13,6 +13,7 @@ struct RootView: View {
   @State private var isInspectorShown = true
   @State private var isNewSheetShown = false
   @State private var printController: PrintController?
+  @State private var isImagePickerShown = false
   @State private var importTarget: Template?
   @State private var resizeDraft: ResizeDraft?
   @State private var selectedSlot: Int?
@@ -49,16 +50,17 @@ struct RootView: View {
     .sheet(isPresented: $isNewSheetShown) {
       NewSheetDialog(templates: model.templates, preselected: model.selectedTemplate ?? model.templates.first)
       {
-        importTarget = $0
+        chooseImages(for: $0)
       }
     }
+    // SwiftUI resets `isPresented` before calling the completion: the template must outlive it.
     .fileImporter(
-      isPresented: Binding(get: { importTarget != nil }, set: { if !$0 { importTarget = nil } }),
-      allowedContentTypes: UTType.cardImages, allowsMultipleSelection: true
+      isPresented: $isImagePickerShown, allowedContentTypes: UTType.cardImages, allowsMultipleSelection: true
     ) { result in
       guard let template = importTarget, case .success(let urls) = result else { return }
       createSheets(urls, template)
     }
+    .fileDialogConfirmationLabel("Sélectionner")
     .sheet(item: $printController) { controller in
       PrintDialog(controller: controller, images: environment.images) { model.savePrintSettings($0) }
     }
@@ -108,7 +110,7 @@ struct RootView: View {
             .labelStyle(.titleAndIcon)
         }
         ToolbarItem {
-          Button("Créer une planche…", systemImage: "photo") { importTarget = template }
+          Button("Créer une planche…", systemImage: "photo") { chooseImages(for: template) }
             .labelStyle(.titleAndIcon)
             .buttonStyle(.glassProminent)
         }
@@ -158,6 +160,11 @@ struct RootView: View {
       zoomToRealSize: { zoom.mode = .realSize },
       toggleInspector: { isInspectorShown.toggle() },
       printCalibrationPage: printCalibrationPage)
+  }
+
+  private func chooseImages(for template: Template) {
+    importTarget = template
+    isImagePickerShown = true
   }
 
   private func createSheets(_ urls: [URL], _ template: Template) {
