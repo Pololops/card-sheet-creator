@@ -39,7 +39,7 @@ enum PrinterFingerprint {
     return text.firstMatch(of: /\*FileVersion:\s*"([^"]*)"/).map { String($0.1) }
   }
 
-  private static func ppdData(of printer: PMPrinter) -> Data? {
+  static func ppdData(of printer: PMPrinter) -> Data? {
     var url: Unmanaged<CFURL>?
     var data: Unmanaged<CFData>?
     guard PMPrinterCopyDescriptionURL(printer, kPMPPDDescriptionType as CFString, &url) == noErr, let url,

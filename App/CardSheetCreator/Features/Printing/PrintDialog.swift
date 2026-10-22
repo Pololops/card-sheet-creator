@@ -8,13 +8,14 @@ struct PrintDialog: View {
   @Bindable var controller: PrintController
   let images: ImageCache
   let onSettingsChange: (PrintSettings) -> Void
+  let onCalibrate: () -> Void
   @Environment(\.dismiss) private var dismiss
-
-  private static let printersSettingsURL = URL(
-    string: "x-apple.systempreferences:com.apple.Print-Scanner-Settings.extension")
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
+      if controller.offersColorCalibration {
+        CalibrationOfferCard(onCalibrate: onCalibrate).transition(.opacity)
+      }
       VStack(alignment: .leading, spacing: 4) {
         Text(controller.title).font(Design.Typography.dialogTitle)
         Text(controller.sheets.map(\.name).joined(separator: " · "))
@@ -40,6 +41,12 @@ struct PrintDialog: View {
     .padding(24)
     .frame(width: 540)
     .disabled(controller.isWorking)
+    .animation(.easeOut(duration: 0.2), value: controller.offersColorCalibration)
+    .onChange(of: controller.settings.printerName) {
+      if controller.offersColorCalibration {
+        AccessibilityNotification.Announcement(CalibrationOfferCard.title).post()
+      }
+    }
     // `initial` persists a stale driver entry the controller dropped while opening.
     .onChange(of: controller.settings, initial: true) { _, settings in onSettingsChange(settings) }
   }
@@ -66,7 +73,8 @@ struct PrintDialog: View {
     Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 14) {
       GridRow {
         Text("Imprimante").gridColumnAlignment(.trailing)
-        printerRow
+        PrinterPicker(
+          printers: controller.printers, selection: printerSelection, isReady: controller.isPrinterReady)
       }
       GridRow {
         Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
@@ -75,6 +83,10 @@ struct PrintDialog: View {
       GridRow {
         Text("Qualité")
         qualityControl
+      }
+      GridRow(alignment: .firstTextBaseline) {
+        Text("Couleurs")
+        ColorCorrectionRow(controller: controller, onCalibrate: onCalibrate)
       }
       GridRow {
         Text("Mise en page")
@@ -109,34 +121,6 @@ struct PrintDialog: View {
     Binding(get: { controller.settings.printerName }, set: controller.selectPrinter)
   }
 
-  @ViewBuilder
-  private var printerRow: some View {
-    if controller.printers.isEmpty {
-      HStack(spacing: 10) {
-        Text("Aucune imprimante configurée").foregroundStyle(.secondary)
-        Button("Ouvrir Imprimantes et scanners") {
-          if let url = Self.printersSettingsURL { NSWorkspace.shared.open(url) }
-        }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
-      }
-    } else {
-      HStack(spacing: 10) {
-        Picker("Imprimante", selection: printerSelection) {
-          ForEach(controller.printers, id: \.self) { Text($0).tag(Optional($0)) }
-        }
-        .labelsHidden()
-        if let isReady = controller.isPrinterReady {
-          Label(isReady ? "Prête" : "Arrêtée", systemImage: "circle.fill")
-            .labelStyle(
-              StatusLabelStyle(color: isReady ? Design.Palette.printerReady : Design.Palette.warning)
-            )
-            .font(Design.Typography.caption)
-        }
-      }
-    }
-  }
-
   private var footer: some View {
     HStack(spacing: 10) {
       Button("Enregistrer en PDF…", action: savePDF)
@@ -147,7 +131,7 @@ struct PrintDialog: View {
         .keyboardShortcut(.cancelAction)
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
-      Button("Imprimer") {
+      Button(controller.offersColorCalibration ? "Imprimer sans régler" : "Imprimer") {
         Task { if await controller.print() { dismiss() } }
       }
       .keyboardShortcut(.defaultAction)
@@ -163,16 +147,5 @@ struct PrintDialog: View {
     panel.nameFieldStringValue = "\(controller.sheets.first?.name ?? "Planches").pdf"
     guard panel.runModal() == .OK, let url = panel.url else { return }
     Task { if await controller.exportPDF(to: url) { dismiss() } }
-  }
-}
-
-private struct StatusLabelStyle: LabelStyle {
-  let color: Color
-
-  func makeBody(configuration: Configuration) -> some View {
-    HStack(spacing: 5) {
-      configuration.icon.font(.system(size: 7)).foregroundStyle(color)
-      configuration.title.foregroundStyle(.secondary)
-    }
   }
 }

@@ -4,7 +4,7 @@ Run before each release, on the Canon G5000 series and at least one other printe
 
 ## Exact size
 
-1. **Calibration** menu → *Imprimer la page de calibration…*
+1. **Imprimante** menu → *Imprimer la page de calibration…*
 2. Measure the card outline: 54 × 85.6 mm ± 0.5 mm. Measure both rulers: 100 mm ± 0.5 mm.
 3. At the middle of each edge, note the first printed mark (1 to 5 mm): it is the printer's real margin.
    If no mark prints on an edge, the unprintable border exceeds 5 mm — write a new ADR.
@@ -57,7 +57,53 @@ Run before each release, on the Canon G5000 series and at least one other printe
     réinitialisés : le pilote a changé", quality picker back, basic settings kept.
 19. With advanced settings active, print the calibration page: the measurements of steps 1–3 hold.
 
+### Colour calibration (Canon G5000, AirPrint)
+
+20. Reset any stored correction (*Réinitialiser* in ⌘P), then ⌘P: the *Nouvelle imprimante* card tops the
+    dialog and the button reads *Imprimer sans régler* (Enter still prints). With VoiceOver on, the card
+    is read first, and again when you switch to another uncalibrated printer. With Reduce Motion on, the
+    card fades in and its icon does not bounce. In light and dark mode the text on the card is readable.
+21. *Régler les couleurs…* on the card: the dialog closes and *Réglage des couleurs* opens on the same
+    printer. Printing is disabled in the toolbar and in the menu while the window is open;
+    *Imprimante → Régler les couleurs…* only brings the window forward.
+22. *Préparer*: *Continuer* stays disabled until the four boxes are ticked. *Ouvrir les réglages
+    Moniteurs* opens System Settings on Displays. Hold a sheet against the white rectangle and tune the
+    brightness until they look alike. The printer menu, *Options de l'imprimante…* and the
+    auto-enhancement tip are there.
+23. *Imprimer*: *Imprimer la mire couleur* prints one A4 page; every patch and letter stays inside the
+    5 mm safety margin. Switch the printer off and retry: *La mire n'est pas sortie* and *Réessayer
+    l'impression* appear; switch it back on and retry. The ring counts 60 s while a bordered *Comparer sans
+    attendre* skips the wait; once VoiceOver announces *L'encre est sèche, tu peux comparer.*, it becomes
+    the prominent *Comparer* (Enter). *Vérifier sans attendre* does the same on the verification page.
+24. *Comparer*: four rounds (*Luminosité*, *Contraste*, *Dominante*, *Intensité des couleurs*), letters A–G
+    and A–I. Judge each reference against the paper, daylight on the sheet. *Retour* reopens the previous
+    round; *Je n'arrive pas à choisir* picks the printed centre. The reference frame is the same neutral
+    grey in light and dark mode. Each tile is read *Pastille X*, the centre one with *Réglage actuel*.
+25. *Vérifier*: *Imprimer la vérification* prints one page of references already corrected; once dry,
+    each one looks like its screen reference. *Affiner* starts the four rounds again, around the saved
+    result; *Tout correspond* (or *Passer cette étape*) goes on.
+26. *C'est réglé*: the sentence names what the printer does wrong in plain words, and the gauges match it.
+    *Terminer et imprimer* closes the window and reopens ⌘P with the same sheets and the same printer;
+    the *Couleurs* row reads *Correction · réglée le …* and *Appliquer la correction* is ticked.
+27. Print a sheet with the correction on and measure a card: 54 × 85.6 mm ± 0.5 mm. The card's white
+    areas and the page margins are paper-white, even under a strong warm or cool correction. Compare
+    the print with the screen: closer than the same sheet printed with *Appliquer la correction* off.
+28. *Enregistrer en PDF…* with the correction on, then off: the two PDFs are identical. Imported PDF
+    artwork stays sharp on the corrected print.
+29. In ⌘P, untick *Appliquer la correction*: *Cette impression part sans correction.* appears. Change
+    the quality, then the printer's options: *Les options de l'imprimante ont changé depuis le réglage
+    des couleurs* appears and the correction is kept. *Régler à nouveau…* starts from the stored
+    correction.
+30. *Réinitialiser*: the row reads *Non réglées* and the card is back.
+31. Black-and-white queue (or a laser printer set to monochrome): *Préparer* shows the black-and-white
+    hint, the chart has two rounds, and *C'est réglé* shows two gauges.
+32. Pause the printer, or remove it in System Settings, while in *Imprimer* and *Vérifier*: the error
+    names the printer, the picks are kept, and retrying works once it is back. With no printer
+    configured, *Imprimante → Régler les couleurs…* opens the window and *Continuer* cannot be reached.
+33. Quit and relaunch: the correction is still there. Retune the step sizes in `CorrectionCurve` if the
+    corrected print still drifts, then freeze them in ADR 0012.
+
 ## Release
 
-20. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
+34. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.

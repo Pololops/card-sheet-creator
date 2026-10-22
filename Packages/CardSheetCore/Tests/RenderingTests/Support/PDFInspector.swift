@@ -42,6 +42,26 @@ struct PDFInspector {
 
   /// The ICC profile of the first image drawn on the page.
   func firstImageICCProfile(page: Int = 1) -> Data? {
+    guard let image = firstImageDictionary(page: page) else { return nil }
+    var colorSpace: CGPDFArrayRef?
+    var iccStream: CGPDFStreamRef?
+    guard CGPDFDictionaryGetArray(image, "ColorSpace", &colorSpace), let colorSpace,
+      CGPDFArrayGetStream(colorSpace, 1, &iccStream), let iccStream
+    else { return nil }
+    var format = CGPDFDataFormat.raw
+    return CGPDFStreamCopyData(iccStream, &format) as Data?
+  }
+
+  /// The pixel width of the first image drawn on the page; `nil` when the page holds no bitmap, as for
+  /// artwork kept as vectors.
+  func firstImagePixelWidth(page: Int = 1) -> Int? {
+    guard let image = firstImageDictionary(page: page) else { return nil }
+    var width: CGPDFInteger = 0
+    return CGPDFDictionaryGetInteger(image, "Width", &width) ? width : nil
+  }
+
+  /// The first XObject that is a bitmap (only images carry a pixel `Width`).
+  private func firstImageDictionary(page: Int) -> CGPDFDictionaryRef? {
     guard let dictionary = document.page(at: page)?.dictionary else { return nil }
     var resources: CGPDFDictionaryRef?
     var xObjects: CGPDFDictionaryRef?
@@ -49,24 +69,20 @@ struct PDFInspector {
       CGPDFDictionaryGetDictionary(resources, "XObject", &xObjects), let xObjects
     else { return nil }
 
-    var profile: Data?
+    var image: CGPDFDictionaryRef?
     CGPDFDictionaryApplyBlock(
       xObjects,
       { _, object, _ in
         var stream: CGPDFStreamRef?
+        var width: CGPDFInteger = 0
         guard CGPDFObjectGetValue(object, .stream, &stream), let stream,
-          let imageDictionary = CGPDFStreamGetDictionary(stream)
+          let candidate = CGPDFStreamGetDictionary(stream),
+          CGPDFDictionaryGetInteger(candidate, "Width", &width)
         else { return true }
-        var colorSpace: CGPDFArrayRef?
-        var iccStream: CGPDFStreamRef?
-        guard CGPDFDictionaryGetArray(imageDictionary, "ColorSpace", &colorSpace), let colorSpace,
-          CGPDFArrayGetStream(colorSpace, 1, &iccStream), let iccStream
-        else { return true }
-        var format = CGPDFDataFormat.raw
-        profile = CGPDFStreamCopyData(iccStream, &format) as Data?
+        image = candidate
         return false
       }, nil)
-    return profile
+    return image
   }
 }
 

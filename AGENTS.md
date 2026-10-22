@@ -10,3 +10,10 @@
 - **Release** — before running `scripts/release.sh`, rename `[Unreleased]` to `[x.y.z] — YYYY-MM-DD`,
   open a new empty `[Unreleased]`, and update the compare links at the bottom.
 - **Roadmap** — move an item out of `Roadmap` once it ships; add new planned work there.
+
+## UI/UX
+
+Follow Apple's latest Human Interface Guidelines as closely as possible: native SwiftUI controls and
+window patterns, system text styles, SF Symbols, Liquid Glass where Apple applies it. ADR 0010 sets the
+app's direction; any deviation from the guidelines needs a stated reason. New screens are validated with
+an interactive mockup before UI code is written.

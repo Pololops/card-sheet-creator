@@ -19,6 +19,7 @@ struct RootView: View {
   @State private var selectedSlot: Int?
   @State private var calibrationFailure: String?
   @Environment(\.undoManager) private var undoManager
+  @Environment(\.openWindow) private var openWindow
 
   init(environment: AppEnvironment) {
     self.environment = environment
@@ -62,7 +63,12 @@ struct RootView: View {
     }
     .fileDialogConfirmationLabel("Sélectionner")
     .sheet(item: $printController) { controller in
-      PrintDialog(controller: controller, images: environment.images) { model.savePrintSettings($0) }
+      PrintDialog(
+        controller: controller, images: environment.images, onSettingsChange: { model.savePrintSettings($0) },
+        onCalibrate: {
+          printController = nil
+          openCalibration(printerName: controller.settings.printerName, sheetIDs: controller.sheets.map(\.id))
+        })
     }
     .sheet(item: offerBinding) { offer in
       TemplateOfferDialog(
@@ -76,6 +82,10 @@ struct RootView: View {
     } message: {
       Text(calibrationFailure ?? "")
     }
+    .colorCalibrationHandoff(
+      route: environment.calibrationRoute, library: model,
+      onReopen: { openPrint(sheets: $0, printerName: $1) }
+    )
     .focusedSceneValue(\.appActions, actions)
   }
 
@@ -120,10 +130,10 @@ struct RootView: View {
             .labelStyle(.titleAndIcon)
         }
         ToolbarItem {
-          Button("Imprimer", systemImage: "printer", action: openPrint)
+          Button("Imprimer", systemImage: "printer") { openPrint() }
             .labelStyle(.titleAndIcon)
             .buttonStyle(.glassProminent)
-            .disabled(model.selectedSheets.isEmpty)
+            .disabled(model.selectedSheets.isEmpty || environment.calibrationRoute.isWindowOpen)
         }
       }
     }
@@ -155,11 +165,18 @@ struct RootView: View {
     AppActions(
       newTemplate: { _ = model.createTemplate() },
       newSheet: { isNewSheetShown = true },
-      print: model.selectedSheets.isEmpty || resizeDraft != nil ? nil : { openPrint() },
+      print: canPrint ? { openPrint() } : nil,
       zoomToFit: { zoom.mode = .fit },
       zoomToRealSize: { zoom.mode = .realSize },
       toggleInspector: { isInspectorShown.toggle() },
+      calibrateColors: printController == nil
+        ? { openCalibration(printerName: model.printSettings.printerName, sheetIDs: []) } : nil,
       printCalibrationPage: printCalibrationPage)
+  }
+
+  /// Two windows must not write the print settings at once: printing waits while the calibration is open.
+  private var canPrint: Bool {
+    !model.selectedSheets.isEmpty && resizeDraft == nil && !environment.calibrationRoute.isWindowOpen
   }
 
   private func chooseImages(for template: Template) {
@@ -177,10 +194,17 @@ struct RootView: View {
     resizeDraft = nil
   }
 
-  private func openPrint() {
+  private func openPrint(sheets: [Sheet]? = nil, printerName: String? = nil) {
+    var saved = model.printSettings
+    if let printerName { saved.printerName = printerName }
     printController = PrintController(
-      sheets: model.selectedSheets, saved: model.printSettings, printService: environment.printService,
+      sheets: sheets ?? model.selectedSheets, saved: saved, printService: environment.printService,
       persistence: environment.persistence)
+  }
+
+  private func openCalibration(printerName: String?, sheetIDs: [UUID]) {
+    environment.calibrationRoute.start(printerName: printerName, sheetIDs: sheetIDs)
+    openWindow(id: WindowID.colorCalibration)
   }
 
   private func printCalibrationPage() {

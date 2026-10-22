@@ -14,10 +14,12 @@ import Testing
     fixtures = try ImageFixtures()
   }
 
-  private func render(_ pages: [RenderPage], images: [String: URL]) async throws -> PDFInspector {
+  private func render(
+    _ pages: [RenderPage], images: [String: URL], correction: ColorCorrection = .neutral
+  ) async throws -> PDFInspector {
     let output = fixtures.directory.appendingPathComponent("\(UUID().uuidString).pdf")
     let renderer = SheetRenderer(imageURL: { images[$0.sha256] ?? URL(fileURLWithPath: "/missing") })
-    try await renderer.renderPDF(pages, to: output)
+    try await renderer.renderPDF(pages, to: output, correction: correction)
     return try PDFInspector(url: output)
   }
 
@@ -144,6 +146,72 @@ import Testing
 
     let pdf = try await render(
       [RenderPage(geometry: standard, contents: [image])], images: [image.sha256: url])
+
+    #expect(pdf.firstImageICCProfile() == Palette.displayP3.copyICCData() as Data?)
+  }
+
+  @Test func correctionBrightensTheSlot() async throws {
+    let (grey, url) = try solid("grey.png", CGColor(srgbRed: 0.4, green: 0.4, blue: 0.4, alpha: 1))
+    let page = RenderPage(geometry: standard, contents: [grey])
+
+    let plain = try await render([page], images: [grey.sha256: url]).raster().color(atMm: 49, 60)
+    let brightened = try await render(
+      [page], images: [grey.sha256: url], correction: ColorCorrection(brightness: 4)
+    )
+    .raster().color(atMm: 49, 60)
+
+    #expect(brightened.red > plain.red + 10)
+  }
+
+  @Test func whiteInsideACardStaysUninked() async throws {
+    let url = try fixtures.bitmap(
+      named: "half-white.png", width: 540, height: 856, left: CGColor(gray: 1, alpha: 1), right: Palette.red)
+    let image = ImageRef(sha256: "half-white", fileExtension: "png")
+    let strongCast = ColorCorrection(brightness: -6, contrast: -6, saturation: -6, warmth: 2, tint: -2)
+
+    let raster = try await render(
+      [RenderPage(geometry: standard, contents: [image])], images: [image.sha256: url],
+      correction: strongCast
+    )
+    .raster()
+
+    #expect(raster.color(atMm: 30, 60).isWhite)
+    #expect(!raster.color(atMm: 70, 60).isWhite)
+  }
+
+  @Test func correctedPDFArtworkIsRasterisedNearPrintResolution() async throws {
+    let url = try fixtures.pdf(named: "artwork.pdf", pageColors: [Palette.green])
+    let image = ImageRef(sha256: "artwork", fileExtension: "pdf")
+    let cover = Crop.coverRect(
+      image: PixelSize(width: 200, height: 300), slot: standard.slot, anchor: .centered)
+    let printedWidth = Int(cover.width / 25.4 * SheetRenderer.printResolution)
+
+    let pdf = try await render(
+      [RenderPage(geometry: standard, contents: [image])], images: [image.sha256: url],
+      correction: ColorCorrection(brightness: 2))
+
+    #expect(try #require(pdf.firstImagePixelWidth()) >= printedWidth - 1)
+  }
+
+  @Test func uncorrectedPDFArtworkStaysVector() async throws {
+    let url = try fixtures.pdf(named: "artwork.pdf", pageColors: [Palette.green])
+    let image = ImageRef(sha256: "artwork", fileExtension: "pdf")
+
+    let pdf = try await render(
+      [RenderPage(geometry: standard, contents: [image])], images: [image.sha256: url])
+
+    #expect(pdf.firstImagePixelWidth() == nil)
+  }
+
+  @Test func correctedImageKeepsItsSourceColorSpace() async throws {
+    let url = try fixtures.bitmap(
+      named: "p3.png", width: 540, height: 856, left: Palette.red, right: Palette.red,
+      colorSpace: Palette.displayP3)
+    let image = ImageRef(sha256: "p3", fileExtension: "png")
+
+    let pdf = try await render(
+      [RenderPage(geometry: standard, contents: [image])], images: [image.sha256: url],
+      correction: ColorCorrection(brightness: 2))
 
     #expect(pdf.firstImageICCProfile() == Palette.displayP3.copyICCData() as Data?)
   }

@@ -50,8 +50,15 @@ xattr -dr com.apple.quarantine /Applications/CardSheetCreator.app
 
 ### Check your printer in one minute
 
-Menu **Calibration → Imprimer la page de calibration…** prints a card outline, two 100 mm rulers and
+Menu **Imprimante → Imprimer la page de calibration…** prints a card outline, two 100 mm rulers and
 edge marks. Measure them with a ruler: they should be exact to ± 0.5 mm.
+
+### Match colours
+
+Menu **Imprimante → Régler les couleurs…** prints a chart of patches. Find on paper the patch that looks
+like its reference on screen, round after round, and the app remembers one colour correction per
+printer. It applies only to what the printer receives: saved PDFs and previews stay as designed, and
+white stays paper-white.
 
 ## Develop
 

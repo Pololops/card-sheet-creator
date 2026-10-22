@@ -160,4 +160,44 @@ import Testing
     #expect(model.templates.map(\.name).contains("Carte 66 × 90"))
     #expect(model.pendingTemplateOffer == nil)
   }
+
+  private func settingsWithTwoPrinters() -> PrintSettings {
+    let driver = DriverSettings(data: Data("old".utf8), fingerprint: "old")
+    let calibration = PrinterCalibration(
+      correction: ColorCorrection(brightness: 1), calibratedAt: Date(timeIntervalSince1970: 1_000),
+      driver: nil, fingerprint: nil, quality: .best)
+    return PrintSettings(
+      printerName: "Canon", quality: .draft, driverSettings: ["Canon": driver, "Epson": driver],
+      colorCalibrations: ["Canon": calibration, "Epson": calibration])
+  }
+
+  @Test func savingAColorCalibrationChangesOnlyItsPrinter() async throws {
+    let (model, _) = await makeModel()
+    let before = settingsWithTwoPrinters()
+    model.savePrintSettings(before)
+    let renewed = PrinterCalibration(
+      correction: ColorCorrection(contrast: -2), calibratedAt: Date(timeIntervalSince1970: 2_000),
+      driver: nil, fingerprint: "epson-1", quality: .best)
+
+    model.saveColorCalibration(renewed, forPrinter: "Epson")
+
+    var expected = before
+    expected.colorCalibrations["Epson"] = renewed
+    #expect(model.printSettings == expected)
+    #expect(try await reloadedSnapshot(of: model).printSettings == expected)
+  }
+
+  @Test func savingDriverSettingsChangesOnlyItsPrinter() async throws {
+    let (model, _) = await makeModel()
+    let before = settingsWithTwoPrinters()
+    model.savePrintSettings(before)
+    let renewed = DriverSettings(data: Data("new".utf8), fingerprint: "new")
+
+    model.saveDriverSettings(renewed, forPrinter: "Epson")
+
+    var expected = before
+    expected.driverSettings["Epson"] = renewed
+    #expect(model.printSettings == expected)
+    #expect(try await reloadedSnapshot(of: model).printSettings == expected)
+  }
 }

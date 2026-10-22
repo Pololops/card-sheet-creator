@@ -31,6 +31,8 @@ public protocol PrintService {
   func isReady(printerNamed name: String) -> Bool?
   /// `nil` when the printer can't be reached.
   func driverFingerprint(printerNamed name: String) -> String?
+  /// `true` when the printer can't be reached: the calibration then offers its colour rounds.
+  func isColorPrinter(named name: String) -> Bool
   /// Opens the system print panel; `nil` when the user cancels or the printer can't be reached.
   func chooseDriverSettings(for settings: PrintSettings, copies: Int) -> DriverChoice?
   func print(pdfAt url: URL, settings: PrintSettings, copies: Int) throws
@@ -61,6 +63,10 @@ public final class AppKitPrintService: PrintService {
 
   public func driverFingerprint(printerNamed name: String) -> String? {
     PrinterFingerprint.current(printerNamed: name)
+  }
+
+  public func isColorPrinter(named name: String) -> Bool {
+    withPrinter(named: name) { PrinterColorSupport.isColor(ppd: PrinterFingerprint.ppdData(of: $0)) } ?? true
   }
 
   public func chooseDriverSettings(for settings: PrintSettings, copies: Int) -> DriverChoice? {

@@ -76,6 +76,33 @@ import Testing
     #expect(settings.driverSettings.isEmpty)
   }
 
+  @Test func colorCalibrationsSurviveARelaunch() async throws {
+    let store = makeStore()
+    let driver = DriverSettings(data: Data([0x01]), fingerprint: "Canon G5000 series|1.0")
+    let calibration = PrinterCalibration(
+      correction: ColorCorrection(brightness: 2, warmth: -1),
+      calibratedAt: Date(timeIntervalSince1970: 4_000),
+      driver: driver, fingerprint: driver.fingerprint, quality: .draft)
+    let settings = PrintSettings(
+      printerName: "Canon G5000 series", colorCalibrations: ["Canon G5000 series": calibration])
+    await store.save(settings)
+    try await store.flush()
+
+    #expect(try await makeStore().loadAll().printSettings == settings)
+  }
+
+  @Test func settingsWrittenBeforeColorCalibrationsStillLoad() async throws {
+    try FileManager.default.createDirectory(at: library.root, withIntermediateDirectories: true)
+    let legacyJSON =
+      #"{"schemaVersion":1,"payload":{"printerName":"Canon G5000 series","quality":"draft","driverSettings":{}}}"#
+    try Data(legacyJSON.utf8).write(to: library.root.appendingPathComponent("settings.json"))
+
+    let settings = try await makeStore().loadAll().printSettings
+
+    #expect(settings.quality == .draft)
+    #expect(settings.colorCalibrations.isEmpty)
+  }
+
   @Test func writesLeaveNoTemporaryFileBehind() async throws {
     let store = makeStore()
     await store.save(template)

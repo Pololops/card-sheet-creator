@@ -55,6 +55,19 @@ final class LibraryModel {
     enqueue { await $0.save(settings) }
   }
 
+  /// Narrow writers for the calibration window: they never touch the dialog's printer or quality.
+  func saveColorCalibration(_ calibration: PrinterCalibration, forPrinter name: String) {
+    var settings = printSettings
+    settings.colorCalibrations[name] = calibration
+    savePrintSettings(settings)
+  }
+
+  func saveDriverSettings(_ driver: DriverSettings, forPrinter name: String) {
+    var settings = printSettings
+    settings.driverSettings[name] = driver
+    savePrintSettings(settings)
+  }
+
   func flush() async throws {
     await saveChain?.value
     try await persistence.flush()

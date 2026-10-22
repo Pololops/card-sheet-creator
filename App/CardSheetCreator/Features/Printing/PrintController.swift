@@ -49,6 +49,31 @@ final class PrintController {
     return stored.fingerprint == fingerprint
   }
 
+  var colorCalibration: PrinterCalibration? {
+    settings.printerName.flatMap { settings.colorCalibrations[$0] }
+  }
+
+  /// A printer that was never calibrated invites the user to do it, every time the dialog opens.
+  var offersColorCalibration: Bool { !printers.isEmpty && colorCalibration == nil }
+
+  /// The correction is kept when the printer's setup changed since it was measured, only flagged.
+  var isColorCalibrationOutdated: Bool {
+    colorCalibration?.isOutdated(
+      driver: controlledDriver, fingerprint: fingerprint, quality: settings.quality)
+      ?? false
+  }
+
+  /// Only the PDF sent to the printer is corrected; saved PDFs stay as designed.
+  private var printedCorrection: ColorCorrection {
+    guard let calibration = colorCalibration, calibration.isApplied else { return .neutral }
+    return calibration.correction
+  }
+
+  private var controlledDriver: DriverSettings? {
+    guard isDriverControlled, let name = settings.printerName else { return nil }
+    return settings.driverSettings[name]
+  }
+
   /// Slot size of the first sheet, quoted in the size guarantee.
   var cardSize: String {
     guard let slot = sheets.first?.geometry.slot else { return "" }
@@ -82,9 +107,19 @@ final class PrintController {
     wasDriverReset = false
   }
 
+  func setCorrectionApplied(_ isApplied: Bool) {
+    guard let name = settings.printerName else { return }
+    settings.colorCalibrations[name]?.isApplied = isApplied
+  }
+
+  func resetColorCalibration() {
+    guard let name = settings.printerName else { return }
+    settings.colorCalibrations[name] = nil
+  }
+
   func print() async -> Bool {
     await run { url in
-      try await renderer.renderPDF(try pages(), to: url)
+      try await renderer.renderPDF(try pages(), to: url, correction: printedCorrection)
       try printService.print(pdfAt: url, settings: settings, copies: copies)
     }
   }
@@ -126,7 +161,7 @@ final class PrintController {
     }
   }
 
-  private static func message(for error: Error) -> String {
+  static func message(for error: Error) -> String {
     switch error {
     case RenderError.unreadableImage(let image):
       "Image introuvable : \(image.originalName). L'impression est bloquée tant que l'image manque."
