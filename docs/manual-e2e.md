@@ -72,8 +72,9 @@ Run before each release, on the Canon G5000 series and at least one other printe
     auto-enhancement tip are there.
 23. *Imprimer*: *Imprimer la mire couleur* prints one A4 page; every patch and letter stays inside the
     5 mm safety margin. Switch the printer off and retry: *La mire n'est pas sortie* and *Réessayer
-    l'impression* appear; switch it back on and retry. The ring counts 60 s, *Comparer* stays disabled
-    until VoiceOver announces *L'encre est sèche, tu peux comparer.*
+    l'impression* appear; switch it back on and retry. The ring counts 60 s while a bordered *Comparer sans
+    attendre* skips the wait; once VoiceOver announces *L'encre est sèche, tu peux comparer.*, it becomes
+    the prominent *Comparer* (Enter). *Vérifier sans attendre* does the same on the verification page.
 24. *Comparer*: four rounds (*Luminosité*, *Contraste*, *Dominante*, *Intensité des couleurs*), letters A–G
     and A–I. Judge each reference against the paper, daylight on the sheet. *Retour* reopens the previous
     round; *Je n'arrive pas à choisir* picks the printed centre. The reference frame is the same neutral

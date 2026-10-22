@@ -86,7 +86,8 @@ final class ColorCalibrationModel {
     step = .prepare
   }
 
-  var canStartComparing: Bool { step == .print && dryingEndsAt != nil && !isInkWet }
+  /// A user in a hurry may compare before the ink is dry, at the cost of a slightly shifted chart.
+  var canStartComparing: Bool { step == .print && dryingEndsAt != nil }
 
   func printChart() async {
     guard step == .print else { return }
@@ -104,8 +105,13 @@ final class ColorCalibrationModel {
     isInkWet = false
   }
 
+  func skipDrying() {
+    isInkWet = false
+  }
+
   func startComparing() {
     guard canStartComparing else { return }
+    skipDrying()
     step = .compare
   }
 

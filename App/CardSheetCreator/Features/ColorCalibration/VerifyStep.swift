@@ -96,14 +96,15 @@ struct VerifyStep: View {
         Button("Affiner", action: model.refine).secondaryAction().disabled(model.isInkWet)
       }
     } primary: {
-      if phase == .ask || phase == .printing {
+      switch phase {
+      case .ask, .printing:
         Button("Imprimer la vérification") { Task { await model.printVerification() } }
           .primaryAction()
           .disabled(phase == .printing)
-      } else {
-        Button("Tout correspond", action: model.finish)
-          .primaryAction()
-          .disabled(phase != .dry)
+      case .drying:
+        Button("Vérifier sans attendre", action: model.skipDrying).secondaryAction()
+      case .dry:
+        Button("Tout correspond", action: model.finish).primaryAction()
       }
     }
   }

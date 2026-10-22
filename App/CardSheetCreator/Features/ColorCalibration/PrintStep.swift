@@ -118,10 +118,10 @@ struct PrintStep: View {
           .disabled(phase == .printing)
       case .failed:
         Button("Réessayer l'impression") { Task { await model.printChart() } }.primaryAction()
-      case .drying, .dry:
-        Button("Comparer", action: model.startComparing)
-          .primaryAction()
-          .disabled(!model.canStartComparing)
+      case .drying:
+        Button("Comparer sans attendre", action: model.startComparing).secondaryAction()
+      case .dry:
+        Button("Comparer", action: model.startComparing).primaryAction()
       }
     }
   }

@@ -89,25 +89,38 @@ import Testing
     #expect(rig.model.dryingEndsAt == rig.clock.now.addingTimeInterval(ColorCalibrationModel.dryingDuration))
   }
 
-  @Test func comparingWaitsForTheInkToDry() async throws {
+  @Test func comparingNeedsAPrintedChart() async throws {
+    let rig = try await CalibrationRig.make()
+    rig.startPrinting()
+
+    rig.model.startComparing()
+
+    #expect(rig.model.step == .print)
+  }
+
+  @Test func comparingCanSkipTheDryingWait() async throws {
     let rig = try await CalibrationRig.make()
     rig.startPrinting()
     await rig.model.printChart()
 
     rig.model.startComparing()
-    #expect(rig.model.step == .print)
+
+    #expect(rig.model.step == .compare)
+    #expect(!rig.model.isInkWet)
+  }
+
+  @Test func inkDriesOnceTheDryingTimeIsUp() async throws {
+    let rig = try await CalibrationRig.make()
+    rig.startPrinting()
+    await rig.model.printChart()
 
     rig.clock.advance(by: ColorCalibrationModel.dryingDuration - 1)
     rig.model.finishDrying()
-    rig.model.startComparing()
     #expect(rig.model.isInkWet)
-    #expect(rig.model.step == .print)
 
     rig.clock.advance(by: 1)
     rig.model.finishDrying()
-    rig.model.startComparing()
     #expect(!rig.model.isInkWet)
-    #expect(rig.model.step == .compare)
   }
 
   @Test func goingBackToPrepareIsOnlyPossibleBeforeTheChartPrints() async throws {
@@ -205,6 +218,18 @@ import Testing
 
     await rig.model.printVerification()
     #expect(rig.model.dryingEndsAt == rig.clock.now.addingTimeInterval(ColorCalibrationModel.dryingDuration))
+  }
+
+  @Test func verificationCanSkipTheDryingWait() async throws {
+    let rig = try await CalibrationRig.make()
+    try await rig.complete()
+    await rig.model.printVerification()
+
+    rig.model.skipDrying()
+    rig.model.finish()
+
+    #expect(!rig.model.isInkWet)
+    #expect(rig.model.step == .done)
   }
 
   @Test func vanishedPrinterKeepsThePicks() async throws {
