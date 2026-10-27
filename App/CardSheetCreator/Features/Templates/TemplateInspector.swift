@@ -49,11 +49,12 @@ struct GeometryFields: View {
   private static let slotStep = Millimeters(tenths: 5)
   private static let gutterStep = Millimeters(tenths: 10)
   private static let maxGutter = Millimeters(tenths: 200)
+  private static let rowSpacing: CGFloat = 10
 
   @State private var rejection: String?
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: Self.rowSpacing) {
       InspectorHeader(title: "Cases")
       MillimeterField(
         label: "Largeur", value: field(\.slot.width), step: Self.slotStep,

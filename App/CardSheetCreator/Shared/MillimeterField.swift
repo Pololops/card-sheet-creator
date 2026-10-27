@@ -9,11 +9,19 @@ struct MillimeterField: View {
   let range: ClosedRange<Millimeters>
   var isChanged = false
 
+  /// Gap between the elements of a row.
+  static let spacing: CGFloat = 8
+  static let unitWidth: CGFloat = 22
+  /// Side of a step button: the tallest element of the row, so also the row height.
+  static let stepSide: CGFloat = 28
+  /// Width from the leading edge of the text field to the trailing edge of the row.
+  static let fieldTrailingSpan = Design.Metrics.fieldWidth + spacing + unitWidth + spacing + 2 * stepSide
+
   @State private var text = ""
   @FocusState private var isFocused: Bool
 
   var body: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: Self.spacing) {
       Text(label)
         .font(Design.Typography.body)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -35,7 +43,7 @@ struct MillimeterField: View {
       Text("mm")
         .font(Design.Typography.callout)
         .foregroundStyle(.secondary)
-        .frame(width: 22, alignment: .leading)
+        .frame(width: Self.unitWidth, alignment: .leading)
       HStack(spacing: 0) {
         stepButton(
           systemImage: "minus", delta: -step.tenths,
@@ -56,7 +64,7 @@ struct MillimeterField: View {
     } label: {
       Image(systemName: systemImage)
         .font(.system(size: 10, weight: .bold))
-        .frame(width: 28, height: 28)
+        .frame(width: Self.stepSide, height: Self.stepSide)
         .contentShape(Capsule())
     }
     .buttonStyle(.plain)
