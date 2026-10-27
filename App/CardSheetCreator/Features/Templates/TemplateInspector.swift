@@ -9,7 +9,7 @@ struct TemplateInspector: View {
     VStack(alignment: .leading, spacing: 20) {
       Text("Gabarit").font(Design.Typography.body.weight(.bold))
       NameField(name: template.name) { model.rename(.template(template.id), to: $0) }
-      GeometryFields(geometry: geometryBinding)
+      GeometryFields(geometry: geometryBinding).id(template.id)
       CapacityCard(geometry: template.geometry)
       pageSection
       Spacer(minLength: 0)
@@ -50,18 +50,20 @@ struct GeometryFields: View {
   private static let gutterStep = Millimeters(tenths: 10)
   private static let maxGutter = Millimeters(tenths: 200)
   private static let rowSpacing: CGFloat = 10
+  /// From the Largeur row centre down to the gap centre between both rows.
+  private static let lockOffset = (MillimeterField.stepSide + rowSpacing) / 2
 
   @State private var rejection: String?
+  @State private var isLocked = true
+  @State private var proportions = ProportionLock()
 
   var body: some View {
     VStack(alignment: .leading, spacing: Self.rowSpacing) {
       InspectorHeader(title: "Cases")
-      MillimeterField(
-        label: "Largeur", value: field(\.slot.width), step: Self.slotStep,
-        range: Domain.GridLayout.minimumSlotSide...usable.width, isChanged: isChanged(\.slot.width))
-      MillimeterField(
-        label: "Hauteur", value: field(\.slot.height), step: Self.slotStep,
-        range: Domain.GridLayout.minimumSlotSide...usable.height, isChanged: isChanged(\.slot.height))
+      slotField(.width, label: "Largeur")
+        .overlay(alignment: .trailing) { lockToggle.offset(y: Self.lockOffset) }
+        .zIndex(1)  // the lock's lower half sits over the Hauteur row and must still get the click
+      slotField(.height, label: "Hauteur")
       MillimeterField(
         label: "Gouttière", value: field(\.gutter), step: Self.gutterStep, range: .zero...Self.maxGutter,
         isChanged: isChanged(\.gutter))
@@ -78,19 +80,66 @@ struct GeometryFields: View {
       height: Millimeters(tenths: Page.a4.height.tenths - margin))
   }
 
+  // The HIG asks for a "Constrain proportions" checkbox; a padlock between the two fields was requested
+  // instead, as it reads at a glance in this dense inspector (ADR 0010 allows stated deviations).
+  private var lockToggle: some View {
+    Toggle(isOn: $isLocked) {
+      Label("Conserver les proportions", systemImage: isLocked ? "lock.fill" : "lock.open")
+        .labelStyle(.iconOnly)
+        .foregroundStyle(.secondary)
+        .frame(width: MillimeterField.stepSide, height: MillimeterField.stepSide)
+        .contentShape(Rectangle())
+    }
+    .toggleStyle(.button)
+    .buttonStyle(.plain)
+    .help("Conserver les proportions")
+    .padding(.trailing, MillimeterField.fieldTrailingSpan)
+  }
+
+  private func slotField(_ side: SlotSide, label: String) -> some View {
+    let slot: WritableKeyPath<SheetGeometry, SlotSize> = \.slot
+    let path = slot.appending(path: side.keyPath)
+    let minimum = Domain.GridLayout.minimumSlotSide
+    let lockedRange =
+      isLocked
+      ? proportions.range(of: side, for: geometry.slot, minimum: minimum, maximum: usable) : nil
+    return MillimeterField(
+      label: label, value: lockedRange == nil ? field(path) : proportionalField(side),
+      step: Self.slotStep, range: lockedRange ?? minimum...usable[keyPath: side.keyPath],
+      isChanged: isChanged(path))
+  }
+
   private func field(_ keyPath: WritableKeyPath<SheetGeometry, Millimeters>) -> Binding<Millimeters> {
     Binding(
       get: { geometry[keyPath: keyPath] },
       set: { value in
         var candidate = geometry
         candidate[keyPath: keyPath] = value
-        guard (try? Domain.GridLayout.make(candidate)) != nil else {
-          rejection = "Trop grand : une case doit tenir dans la zone de 200 × 287 mm."
-          return
-        }
-        rejection = nil
-        geometry = candidate
+        apply(candidate)
       })
+  }
+
+  /// One `geometry` write per edit, so the template path records a single undo step.
+  private func proportionalField(_ side: SlotSide) -> Binding<Millimeters> {
+    Binding(
+      get: { geometry.slot[keyPath: side.keyPath] },
+      set: { value in
+        let current = geometry.slot
+        var candidate = geometry
+        candidate.slot = proportions.resized(current, setting: side, to: value)
+        if apply(candidate) { proportions.record(candidate.slot, from: current) }
+      })
+  }
+
+  @discardableResult
+  private func apply(_ candidate: SheetGeometry) -> Bool {
+    guard (try? Domain.GridLayout.make(candidate)) != nil else {
+      rejection = "Trop grand : une case doit tenir dans la zone de 200 × 287 mm."
+      return false
+    }
+    rejection = nil
+    geometry = candidate
+    return true
   }
 
   private func isChanged(_ keyPath: KeyPath<SheetGeometry, Millimeters>) -> Bool {

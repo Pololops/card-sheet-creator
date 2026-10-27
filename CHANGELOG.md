@@ -23,6 +23,12 @@ Planned work, not yet scheduled in a release.
 
 ## [Unreleased]
 
+### Added
+
+- **Proportion lock** — a padlock between *Largeur* and *Hauteur* keeps a slot's proportions: change one
+  side and the other follows, to the tenth of a millimetre. Closed by default; open it to edit each side
+  on its own.
+
 ## [0.4.0] — 2026-10-22
 
 ### Added
