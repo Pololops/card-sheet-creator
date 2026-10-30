@@ -23,6 +23,8 @@ Planned work, not yet scheduled in a release.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-30
+
 ### Added
 
 - **Proportion lock** — a padlock between *Largeur* and *Hauteur* keeps a slot's proportions: change one
@@ -116,7 +118,8 @@ First release.
 - Liquid Glass app icon.
 - Formats: PNG, JPEG, HEIC, TIFF and PDF (first page).
 
-[Unreleased]: https://github.com/Pololops/card-sheet-creator/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Pololops/card-sheet-creator/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Pololops/card-sheet-creator/compare/v0.2.0...v0.2.1
