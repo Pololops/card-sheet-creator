@@ -34,6 +34,9 @@ Planned work, not yet scheduled in a release.
   trackpad when you reach a limit.
 - **Pinch a slot to resize every slot** — on a template, pinch starting on a slot to resize all the slots at
   once, proportions kept, as a single step ⌘Z undoes. The padlock is left as you set it.
+- **Two-finger scroll frames an image** — on a sheet, with a slot selected, scroll with two fingers over it
+  to move its image inside the slot, as a single step ⌘Z undoes, with a tap of the trackpad when it
+  centres. Anywhere else, the page scrolls as before.
 
 ### Changed
 

@@ -129,7 +129,16 @@ Run before each release, on the Canon G5000 series and at least one other printe
     size from before the press. Do the same with *+*, on *Hauteur* and on *Gouttière*, then with the padlock
     open. A plain click still steps once. In a sheet's *Redimensionner* bar, hold *−* or *+*: it repeats too.
 
+38. On a sheet, select a slot, then scroll with two fingers over it: the image follows the scrolling
+    (with natural scrolling, it follows your fingers) and stops at its edges, the transparent overflow and
+    the *Centrée* tag appear while you move, and the trackpad taps when the image reaches the centre. Lift
+    your fingers: one ⌘Z brings the framing back, and the glide that follows does not scroll the page. Scroll
+    over an unselected slot, between slots, on the grey canvas, over the zoom control and over a slot whose
+    image has exactly the slot's ratio: the page scrolls instead. With the print sheet open, scrolling
+    over the app's window changes nothing under it. A mouse wheel still scrolls the page, and click, drag,
+    arrow keys and the context menu on a slot still work.
+
 ## Release
 
-38. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
+39. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.
