@@ -103,7 +103,16 @@ Run before each release, on the Canon G5000 series and at least one other printe
 33. Quit and relaunch: the correction is still there. Retune the step sizes in `CorrectionCurve` if the
     corrected print still drifts, then freeze them in ADR 0012.
 
+## Trackpad and gestures
+
+34. Sidebar, on a template row then on a sheet row, swipe two fingers to the left: a red trash grows under the
+    row's trailing side, and the row stays visible. A trash click or a full swipe opens *Supprimer « … » ?*;
+    the context menu's *Supprimer* and the Delete key open the same dialog, with the count for several
+    rows (*Supprimer 2 éléments ?*). Return does not delete and Esc cancels; *Annuler* snaps the row back and
+    leaves the selection alone; *Supprimer* removes it and ⌘Z brings it back. The empty-sheets card does not
+    swipe, and VoiceOver lists *Supprimer* among the row's actions.
+
 ## Release
 
-34. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
+35. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.

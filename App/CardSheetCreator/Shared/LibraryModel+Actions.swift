@@ -88,7 +88,8 @@ extension LibraryModel {
     if let copy { selection = [copy] }
   }
 
-  /// Immediate, with ⌘Z to bring items back; their images stay on disk until the next launch.
+  /// Asked for confirmation first (ADR 0013); ⌘Z brings items back, and their images stay on disk until
+  /// the next launch.
   func delete(_ items: Set<LibraryItem>) {
     guard !items.isEmpty else { return }
     change(items.count == 1 ? "Supprimer" : "Supprimer \(items.count) éléments") { templates, sheets in

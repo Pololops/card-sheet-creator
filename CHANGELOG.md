@@ -20,8 +20,22 @@ Planned work, not yet scheduled in a release.
   Developer account ([ADR 0009](docs/adr/0009-ad-hoc-distribution.md)).
 - **iOS and iPadOS** — a new app target and an iOS print adapter; Domain, Rendering and Storage carry
   over ([ADR 0002](docs/adr/0002-native-swift-swiftui.md)).
+- **Zoom an image inside its slot** — enlarge the picture beyond covering the slot, then frame it.
+- **Rotate an image by 90°** — in its slot, for pictures taken sideways.
+- **Quick Look** — preview an image or a sheet with the space bar.
 
 ## [Unreleased]
+
+### Added
+
+- **Swipe to delete** — swipe two fingers to the left over a template or a sheet in the sidebar to reveal
+  a red trash, as in Mail.
+
+### Changed
+
+- Every deletion now asks for confirmation, from the swipe, the context menu or the Delete key; the dialog
+  names what goes away, and *Annuler* is the default
+  ([ADR 0013](docs/adr/0013-confirm-every-deletion.md)). ⌘Z still brings it back.
 
 ## [0.5.0] — 2026-10-30
 

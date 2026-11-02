@@ -11,17 +11,12 @@ struct LibrarySidebar: View {
   @State private var sheetsExpanded = true
   @State private var renaming: LibraryItem?
   @State private var newName = ""
+  @State private var pendingDeletion: DeletionPrompt?
 
   var body: some View {
     List(selection: $model.selection) {
       Section(isExpanded: $templatesExpanded) {
-        ForEach(model.templates) { template in
-          LibraryRow(title: template.name, subtitle: template.summary) {
-            TemplateThumbnail(geometry: template.geometry, size: Design.Metrics.sidebarThumbnail)
-          }
-          .tag(LibraryItem.template(template.id))
-          .contextMenu { contextMenu(for: .template(template.id), name: template.name) }
-        }
+        templateRows
       } header: {
         SectionHeader(title: "Gabarits", count: model.templates.count, addLabel: "Nouveau gabarit") {
           _ = model.createTemplate()
@@ -29,32 +24,83 @@ struct LibrarySidebar: View {
       }
 
       Section(isExpanded: $sheetsExpanded) {
-        if model.sheets.isEmpty {
-          EmptySheetsCard(onNewSheet: onNewSheet)
-        }
-        ForEach(model.sheets) { sheet in
-          LibraryRow(title: sheet.name, subtitle: sheet.summary) {
-            SheetThumbnail(sheet: sheet, images: images, size: Design.Metrics.sidebarThumbnail)
-          }
-          .tag(LibraryItem.sheet(sheet.id))
-          .contextMenu { contextMenu(for: .sheet(sheet.id), name: sheet.name) }
-        }
+        sheetRows
       } header: {
         SectionHeader(
           title: "Planches", count: model.sheets.count, addLabel: "Nouvelle planche", add: onNewSheet)
       }
     }
     .listStyle(.sidebar)
-    .onDeleteCommand { model.delete(model.selection) }
+    .onDeleteCommand { requestDeletion(model.selection) }
     .alert("Renommer", isPresented: isRenaming) {
       TextField("Nom", text: $newName)
       Button("Annuler", role: .cancel) {}
       Button("Renommer") { if let renaming { model.rename(renaming, to: newName) } }
     }
+    // ADR 0013: the swipe, the context menu and the Delete key all end in this one dialog, so no path
+    // deletes without asking.
+    .confirmationDialog(
+      pendingDeletion?.title ?? "", isPresented: isConfirmingDeletion, titleVisibility: .visible,
+      presenting: pendingDeletion
+    ) { prompt in
+      Button("Supprimer", role: .destructive) { model.confirmDeletion(prompt) }
+      // Return must never reach the destructive button, so the cancel button takes the default action.
+      Button("Annuler", role: .cancel) {}.keyboardShortcut(.defaultAction)
+    } message: { prompt in
+      Text(prompt.message)
+    }
+  }
+
+  @ViewBuilder
+  private var templateRows: some View {
+    ForEach(model.templates) { template in
+      let item = LibraryItem.template(template.id)
+      LibraryRow(title: template.name, subtitle: template.summary) {
+        TemplateThumbnail(geometry: template.geometry, size: Design.Metrics.sidebarThumbnail)
+      }
+      .tag(item)
+      .contextMenu { contextMenu(for: item, name: template.name) }
+      .swipeActions(edge: .trailing, allowsFullSwipe: true) { deleteSwipeAction(for: item) }
+    }
+  }
+
+  @ViewBuilder
+  private var sheetRows: some View {
+    if model.sheets.isEmpty {
+      EmptySheetsCard(onNewSheet: onNewSheet)
+    }
+    ForEach(model.sheets) { sheet in
+      let item = LibraryItem.sheet(sheet.id)
+      LibraryRow(title: sheet.name, subtitle: sheet.summary) {
+        SheetThumbnail(sheet: sheet, images: images, size: Design.Metrics.sidebarThumbnail)
+      }
+      .tag(item)
+      .contextMenu { contextMenu(for: item, name: sheet.name) }
+      .swipeActions(edge: .trailing, allowsFullSwipe: true) { deleteSwipeAction(for: item) }
+    }
   }
 
   private var isRenaming: Binding<Bool> {
     Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })
+  }
+
+  private var isConfirmingDeletion: Binding<Bool> {
+    Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
+  }
+
+  private func requestDeletion(_ items: Set<LibraryItem>) {
+    pendingDeletion = model.deletionPrompt(for: items)
+  }
+
+  // ADR 0010: a plain tinted button, as in Mail. The row stays in place until the dialog is answered, so
+  // only the dialog's own button carries the destructive role.
+  private func deleteSwipeAction(for item: LibraryItem) -> some View {
+    Button {
+      requestDeletion([item])
+    } label: {
+      Label("Supprimer", systemImage: "trash")
+    }
+    .tint(.red)
   }
 
   @ViewBuilder
@@ -66,7 +112,7 @@ struct LibrarySidebar: View {
     Button("Dupliquer") { model.duplicate(item) }
     Divider()
     Button("Supprimer", role: .destructive) {
-      model.delete(model.selection.contains(item) ? model.selection : [item])
+      requestDeletion(model.selection.contains(item) ? model.selection : [item])
     }
   }
 }
