@@ -19,6 +19,9 @@ final class LibraryModel {
   var pendingTemplateOffer: TemplateOffer?
   var saveFailure: String?
   var loadFailure: String?
+  /// Never saved and never undoable: only `change` persists (ADR 0004). A pinch or a held step shows its
+  /// geometry here and writes it once, as one undo step, when the gesture ends.
+  private(set) var geometryPreview: GeometryPreview?
 
   @ObservationIgnored var undoManager: UndoManager?
   @ObservationIgnored let persistence: any LibraryPersistence
@@ -103,6 +106,7 @@ final class LibraryModel {
 
   /// Applies `body`, saves what changed and registers the inverse with the undo manager.
   func change(_ actionName: String, _ body: (inout [Template], inout [Sheet]) -> Void) {
+    geometryPreview = nil
     let before = state
     var nextTemplates = templates
     var nextSheets = sheets
@@ -120,6 +124,7 @@ final class LibraryModel {
   private func registerUndo(_ actionName: String, restoring snapshot: LibraryState) {
     guard let undoManager else { return }
     undoManager.registerUndo(withTarget: self) { model in
+      model.geometryPreview = nil
       let current = model.state
       model.apply(snapshot, persistingFrom: current)
       model.registerUndo(actionName, restoring: current)
@@ -154,6 +159,51 @@ final class LibraryModel {
 
   private static func sortedByRecency<Item: RecencySortable>(_ items: [Item]) -> [Item] {
     items.sorted { $0.updatedAt > $1.updatedAt }
+  }
+}
+
+extension LibraryModel {
+  // MARK: - Geometry preview
+
+  struct GeometryPreview: Equatable {
+    let templateID: UUID
+    var geometry: SheetGeometry
+  }
+
+  /// What the canvas and the inspector show: the preview of that template if there is one, else the saved size.
+  func geometry(ofTemplate id: UUID) -> SheetGeometry? {
+    if let geometryPreview, geometryPreview.templateID == id { return geometryPreview.geometry }
+    return template(id: id)?.geometry
+  }
+
+  func beginGeometryPreview(ofTemplate id: UUID) {
+    guard let saved = template(id: id)?.geometry else { return }
+    geometryPreview = GeometryPreview(templateID: id, geometry: saved)
+  }
+
+  func previewGeometry(ofTemplate id: UUID, to geometry: SheetGeometry) {
+    guard geometryPreview?.templateID == id, (try? Domain.GridLayout.make(geometry)) != nil else { return }
+    geometryPreview?.geometry = geometry
+  }
+
+  /// The model decides where a write goes, so a held step lands in the preview without its caller knowing.
+  func editGeometry(ofTemplate id: UUID, to geometry: SheetGeometry) {
+    if geometryPreview?.templateID == id {
+      previewGeometry(ofTemplate: id, to: geometry)
+    } else {
+      updateGeometry(ofTemplate: id, to: geometry)
+    }
+  }
+
+  /// Synchronous on purpose: a gesture's end must not race a ⌘Z typed right after it.
+  func commitGeometryPreview() {
+    guard let preview = geometryPreview else { return }
+    geometryPreview = nil
+    updateGeometry(ofTemplate: preview.templateID, to: preview.geometry)
+  }
+
+  func discardGeometryPreview() {
+    geometryPreview = nil
   }
 }
 

@@ -32,6 +32,8 @@ Planned work, not yet scheduled in a release.
   a red trash, as in Mail.
 - **Pinch to zoom** — pinch on the trackpad to zoom the page between 25 % and 400 %, with a tap of the
   trackpad when you reach a limit.
+- **Pinch a slot to resize every slot** — on a template, pinch starting on a slot to resize all the slots at
+  once, proportions kept, as a single step ⌘Z undoes. The padlock is left as you set it.
 
 ### Changed
 

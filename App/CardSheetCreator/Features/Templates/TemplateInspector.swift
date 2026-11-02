@@ -10,7 +10,7 @@ struct TemplateInspector: View {
       Text("Gabarit").font(Design.Typography.body.weight(.bold))
       NameField(name: template.name) { model.rename(.template(template.id), to: $0) }
       GeometryFields(geometry: geometryBinding).id(template.id)
-      CapacityCard(geometry: template.geometry)
+      CapacityCard(geometry: displayedGeometry)
       pageSection
       Spacer(minLength: 0)
       SavedFooter(date: template.updatedAt)
@@ -18,10 +18,15 @@ struct TemplateInspector: View {
     .padding(16)
   }
 
+  /// The pinch's preview while one is under way, so the capacity follows the fingers.
+  private var displayedGeometry: SheetGeometry {
+    model.geometry(ofTemplate: template.id) ?? template.geometry
+  }
+
   private var geometryBinding: Binding<SheetGeometry> {
     Binding(
-      get: { template.geometry },
-      set: { model.updateGeometry(ofTemplate: template.id, to: $0) })
+      get: { displayedGeometry },
+      set: { model.editGeometry(ofTemplate: template.id, to: $0) })
   }
 
   private var pageSection: some View {

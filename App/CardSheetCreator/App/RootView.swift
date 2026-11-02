@@ -47,6 +47,7 @@ struct RootView: View {
     .onChange(of: model.selection) {
       selectedSlot = nil
       resizeDraft = nil
+      model.discardGeometryPreview()
     }
     .sheet(isPresented: $isNewSheetShown) {
       NewSheetDialog(templates: model.templates, preselected: model.selectedTemplate ?? model.templates.first)

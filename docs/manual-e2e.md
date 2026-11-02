@@ -117,7 +117,14 @@ Run before each release, on the Canon G5000 series and at least one other printe
     400 % with a tap of the trackpad. Do the same on a template, then check that *Ajuster* and
     *Taille réelle* still work after a pinch.
 
+36. On a template, pinch two fingers starting on a slot: every slot resizes together with the ratio kept,
+    the dimension tags and the capacity ("3 × 3 = 9 cartes") follow the fingers, and the inspector fields
+    show the new size without saving it yet. Release: one ⌘Z brings the old size back. Start a pinch in the
+    gutter, in the hatched band and on the grey canvas: each one zooms the view instead. Press ⌘Z during a
+    pinch: nothing is left half-applied. The padlock keeps the state it had, and the pinch stops at 10 mm
+    and at the largest slot that fits the page, with a tap of the trackpad.
+
 ## Release
 
-36. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
+37. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.
