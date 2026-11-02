@@ -49,8 +49,26 @@ final class CanvasZoom {
     Int((scale(fitting: available) / hundredPercentScale * 100).rounded())
   }
 
+  static func clampedPercent(_ percent: Int) -> Int {
+    min(max(percent, percentRange.lowerBound), percentRange.upperBound)
+  }
+
   func zoom(by delta: Int, from available: CGSize) {
-    let next = percent(fitting: available) + delta
-    mode = .custom(percent: min(max(next, Self.percentRange.lowerBound), Self.percentRange.upperBound))
+    mode = .custom(percent: Self.clampedPercent(percent(fitting: available) + delta))
+  }
+
+  /// Scales from the percentage the pinch started at, so every update of one gesture is independent of the
+  /// previous one. Returns true when the zoom is held at a limit.
+  @discardableResult
+  func magnify(from startPercent: Int, by magnification: Double) -> Bool {
+    let requested = Int((Double(startPercent) * magnification).rounded())
+    let clamped = Self.clampedPercent(requested)
+    mode = .custom(percent: clamped)
+    return clamped != requested
+  }
+
+  /// Fit shows the page at physical size; physical size or any chosen percentage goes back to fit.
+  func toggleFitAndRealSize() {
+    mode = mode == .fit ? .realSize : .fit
   }
 }

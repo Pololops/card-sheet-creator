@@ -15,6 +15,9 @@ struct DetailCanvas: View {
 
   @State private var droppingCount: Int?
   @State private var isShowingSkipped = false
+  @State private var pageFrame = CGRect.zero
+
+  private static let contentSpace = "canvasContent"
 
   var body: some View {
     GeometryReader { proxy in
@@ -30,6 +33,10 @@ struct DetailCanvas: View {
             .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
             .contentShape(Rectangle())
             .onTapGesture { selectedSlot = nil }
+            .coordinateSpace(.named(Self.contentSpace))
+            .modifier(
+              CanvasPinch(model: model, zoom: zoom, available: proxy.size, pageFrame: pageFrame, scale: scale)
+            )
         }
         .scrollIndicators(.automatic)
         VStack(spacing: 12) {
@@ -39,16 +46,32 @@ struct DetailCanvas: View {
         }
         .padding(.vertical, 20)
       }
+      .background(TrackpadProbe(role: .canvas, onEvent: toggleZoom))
     }
+  }
+
+  /// A two-finger double-tap that no selected image took toggles between fit and physical size.
+  private func toggleZoom(on event: TrackpadEvent) -> Bool {
+    guard case .smartMagnify = event else { return false }
+    zoom.toggleFitAndRealSize()
+    return true
   }
 
   @ViewBuilder
   private func page(scale: Double) -> some View {
     if let template = model.selectedTemplate {
-      TemplateCanvas(geometry: template.geometry, scale: scale, droppingCount: droppingCount)
-        .onDrop(
-          of: [.fileURL],
-          delegate: ImageDropDelegate(droppingCount: $droppingCount) { onDropImages($0, template) })
+      TemplateCanvas(
+        geometry: model.geometry(ofTemplate: template.id) ?? template.geometry, scale: scale,
+        droppingCount: droppingCount
+      )
+      .onGeometryChange(for: CGRect.self) {
+        $0.frame(in: .named(Self.contentSpace))
+      } action: {
+        pageFrame = $0
+      }
+      .onDrop(
+        of: [.fileURL],
+        delegate: ImageDropDelegate(droppingCount: $droppingCount) { onDropImages($0, template) })
     } else if let sheet = model.selectedSheet {
       VStack(spacing: 10) {
         if resizeDraft != nil { DraftBadge() }

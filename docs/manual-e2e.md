@@ -103,7 +103,48 @@ Run before each release, on the Canon G5000 series and at least one other printe
 33. Quit and relaunch: the correction is still there. Retune the step sizes in `CorrectionCurve` if the
     corrected print still drifts, then freeze them in ADR 0012.
 
+## Trackpad and gestures
+
+34. Sidebar, on a template row then on a sheet row, swipe two fingers to the left: a red trash grows under the
+    row's trailing side, and the row stays visible. A trash click or a full swipe opens *Supprimer « … » ?*;
+    the context menu's *Supprimer* and the Delete key open the same dialog, with the count for several
+    rows (*Supprimer 2 éléments ?*). Return does not delete and Esc cancels; *Annuler* snaps the row back and
+    leaves the selection alone; *Supprimer* removes it and ⌘Z brings it back. The empty-sheets card does not
+    swipe, and VoiceOver lists *Supprimer* among the row's actions.
+
+35. On a sheet, pinch two fingers on the trackpad: the whole canvas zooms (gutters, hatched band, grey
+    background and the page), the percentage in the zoom control follows, and the zoom stops at 25 % and
+    400 % with a tap of the trackpad. Do the same on a template, then check that *Ajuster* and
+    *Taille réelle* still work after a pinch.
+
+36. On a template, pinch two fingers starting on a slot: every slot resizes together with the ratio kept,
+    the dimension tags and the capacity ("3 × 3 = 9 cartes") follow the fingers, and the inspector fields
+    show the new size without saving it yet. Release: one ⌘Z brings the old size back. Start a pinch in the
+    gutter, in the hatched band and on the grey canvas: each one zooms the view instead. Press ⌘Z during a
+    pinch: nothing is left half-applied. The padlock keeps the state it had, and the pinch stops at 10 mm
+    and at the largest slot that fits the page, with a tap of the trackpad.
+
+37. In a template's inspector, hold *−* on *Largeur*: the value keeps decreasing while the slots on the
+    canvas follow, and stops at the minimum. Release: the template is saved once and one ⌘Z brings back the
+    size from before the press. Do the same with *+*, on *Hauteur* and on *Gouttière*, then with the padlock
+    open. A plain click still steps once. In a sheet's *Redimensionner* bar, hold *−* or *+*: it repeats too.
+
+38. On a sheet, select a slot, then scroll with two fingers over it: the image follows the scrolling
+    (with natural scrolling, it follows your fingers) and stops at its edges, the transparent overflow and
+    the *Centrée* tag appear while you move, and the trackpad taps when the image reaches the centre. Lift
+    your fingers: one ⌘Z brings the framing back, and the glide that follows does not scroll the page. Scroll
+    over an unselected slot, between slots, on the grey canvas, over the zoom control and over a slot whose
+    image has exactly the slot's ratio: the page scrolls instead. With the print sheet open, scrolling
+    over the app's window changes nothing under it. A mouse wheel still scrolls the page, and click, drag,
+    arrow keys and the context menu on a slot still work.
+
+39. On a sheet, frame the selected slot's image off-centre, then double-tap with two fingers on it: it
+    snaps back to the centre, and one ⌘Z brings the framing back. Double-tap on an unselected slot, on
+    the grey canvas and on a template: the canvas toggles between *Ajuster* and *Taille réelle*, and from
+    a chosen percentage it goes back to *Ajuster*. The zoom control follows. Over the zoom control or a
+    banner it toggles the zoom too (accepted).
+
 ## Release
 
-34. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
+40. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.

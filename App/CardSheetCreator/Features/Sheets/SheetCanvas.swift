@@ -13,11 +13,21 @@ struct SheetCanvas: View {
   let onCropChange: (CropAnchor, ImageRef) -> Void
 
   @State private var drag: ActiveDrag?
+  @State private var pan: ActivePan?
 
   struct ActiveDrag: Equatable {
     var slot: Int
     var image: ImageRef
     var anchor: CropAnchor
+  }
+
+  /// A two-finger scroll in progress. The size is `nil` until a cache miss resolves.
+  private struct ActivePan {
+    var slot: Int
+    var image: ImageRef
+    var startAnchor: CropAnchor
+    var size: PixelSize?
+    var offset = MMOffset(dx: 0, dy: 0)
   }
 
   var body: some View {
@@ -34,6 +44,13 @@ struct SheetCanvas: View {
             images: images)
         }
       }
+    }
+    .background(
+      TrackpadProbe(role: .page) { handleTrackpad($0, layout: layout, contents: contents) }
+    )
+    // Only the edge into the centre taps the trackpad; a drag that starts centred, or ends, stays silent.
+    .sensoryFeedback(.alignment, trigger: drag.map { Crop.isCentered($0.anchor) }) {
+      $0 == false && $1 == true
     }
     .focusable(isEditable)
     .focusEffectDisabled()
@@ -95,6 +112,96 @@ struct SheetCanvas: View {
         if let drag { onCropChange(drag.anchor, drag.image) }
         drag = nil
       }
+  }
+
+  /// The image a two-finger scroll pans: the selected slot's, and only while the pointer is over that slot.
+  static func panTarget(
+    at point: CGPoint, layout: Domain.GridLayout?, contents: [ImageRef?], selectedSlot: Int?, scale: Double
+  ) -> (slot: Int, image: ImageRef)? {
+    guard let layout, let selectedSlot, layout.slots.indices.contains(selectedSlot),
+      contents.indices.contains(selectedSlot), let image = contents[selectedSlot],
+      layout.slots[selectedSlot].scaled(scale).contains(point)
+    else { return nil }
+    return (selectedSlot, image)
+  }
+
+  /// Returns whether the event is ours, which is what keeps it from the page scroll.
+  private func handleTrackpad(_ event: TrackpadEvent, layout: Domain.GridLayout?, contents: [ImageRef?])
+    -> Bool
+  {
+    switch event {
+    case .panBegan(let point):
+      return beginPan(at: point, layout: layout, contents: contents)
+    case .panChanged(let delta):
+      movePan(by: delta)
+    case .panEnded:
+      endPan()
+    case .panCancelled:
+      cancelPan()
+    case .smartMagnify(let point):
+      return recenter(at: point, layout: layout, contents: contents)
+    }
+    return true
+  }
+
+  /// A two-finger double-tap on the selected image puts it back at the centre of its slot.
+  private func recenter(at point: CGPoint, layout: Domain.GridLayout?, contents: [ImageRef?]) -> Bool {
+    guard isEditable,
+      let target = Self.panTarget(
+        at: point, layout: layout, contents: contents, selectedSlot: selectedSlot, scale: scale)
+    else { return false }
+    onCropChange(.centered, target.image)
+    return true
+  }
+
+  private func beginPan(at point: CGPoint, layout: Domain.GridLayout?, contents: [ImageRef?]) -> Bool {
+    guard isEditable,
+      let target = Self.panTarget(
+        at: point, layout: layout, contents: contents, selectedSlot: selectedSlot, scale: scale)
+    else { return false }
+    let size = images.cachedDisplaySize(of: target.image)
+    if let size, !Crop.canReframe(image: size, slot: geometry.slot) { return false }
+    pan = ActivePan(
+      slot: target.slot, image: target.image, startAnchor: sheet.crop(for: target.image), size: size)
+    // The gesture has already started: claim it now, and drop it if the image turns out to be uncroppable.
+    if size == nil { resolvePanSize(of: target.image) }
+    return true
+  }
+
+  private func resolvePanSize(of image: ImageRef) {
+    Task {
+      let size = await images.displaySize(of: image)
+      guard pan?.image == image else { return }
+      guard let size, Crop.canReframe(image: size, slot: geometry.slot) else { return cancelPan() }
+      pan?.size = size
+      previewPan()
+    }
+  }
+
+  private func movePan(by delta: CGVector) {
+    guard pan != nil else { return }
+    pan?.offset.dx += delta.dx / scale
+    pan?.offset.dy += delta.dy / scale
+    previewPan()
+  }
+
+  private func previewPan() {
+    guard let pan, let size = pan.size else { return }
+    drag = ActiveDrag(
+      slot: pan.slot, image: pan.image,
+      anchor: Crop.anchor(pan.startAnchor, afterDragBy: pan.offset, image: size, slot: geometry.slot))
+  }
+
+  /// One crop change for the whole gesture, so one ⌘Z undoes it.
+  private func endPan() {
+    if pan != nil, let drag { onCropChange(drag.anchor, drag.image) }
+    cancelPan()
+  }
+
+  private func cancelPan() {
+    guard pan != nil else { return }
+    pan = nil
+    drag = nil
   }
 
   private static let nudgeStep = 0.5
@@ -183,56 +290,5 @@ struct SlotView: View {
   static func maxPixels(_ slot: SlotSize, _ scale: Double, _ displayScale: Double) -> Int {
     let needed = max(slot.width.mm, slot.height.mm) * scale * displayScale * 2.5
     return max(256, Int(pow(2, ceil(log2(needed)))))
-  }
-}
-
-/// While dragging: the overflowing part of the image in transparency, plus centre guides once centered.
-private struct DragOverlay: View {
-  let drag: SheetCanvas.ActiveDrag
-  let frame: CGRect
-  let slotSize: SlotSize
-  let scale: Double
-  let images: ImageCache
-
-  var body: some View {
-    let isCentered = Crop.isCentered(drag.anchor)
-    ZStack(alignment: .topLeading) {
-      SlotView(
-        image: drag.image, anchor: drag.anchor, slotSize: slotSize, scale: scale, images: images,
-        isDraggable: false
-      )
-      .opacity(0.3)
-      .offset(x: frame.minX, y: frame.minY)
-      Rectangle()
-        .strokeBorder(Color.accentColor, lineWidth: 2)
-        .overlay {
-          if isCentered { CenterGuides() }
-        }
-        .frame(width: frame.width, height: frame.height)
-        .offset(x: frame.minX, y: frame.minY)
-      if isCentered {
-        Text("Centrée")
-          .font(.system(size: 10, weight: .bold))
-          .foregroundStyle(.white)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 2)
-          .background(Design.Palette.centerGuide, in: Capsule())
-          .frame(width: frame.width)
-          .offset(x: frame.minX, y: frame.minY - 28)
-      }
-    }
-    .allowsHitTesting(false)
-    .accessibilityHidden(true)
-  }
-}
-
-private struct CenterGuides: View {
-  var body: some View {
-    ZStack {
-      Rectangle().fill(Design.Palette.centerGuide).frame(width: 1.5).shadow(color: .white, radius: 0, x: 1)
-        .shadow(color: .white, radius: 0, x: -1)
-      Rectangle().fill(Design.Palette.centerGuide).frame(height: 1.5).shadow(color: .white, radius: 0, y: 1)
-        .shadow(color: .white, radius: 0, y: -1)
-    }
   }
 }

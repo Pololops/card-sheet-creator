@@ -42,6 +42,55 @@ import Testing
     #expect(await holdsTrue(for: Self.settleWindow, isPaper))
   }
 
+  // MARK: - Pan target
+
+  private static let panScale = 2.0
+  private static let firstImage = ImageRef(sha256: "first", fileExtension: "png")
+  private static let secondImage = ImageRef(sha256: "second", fileExtension: "png")
+  private let panLayout = try? GridLayout.make(SheetGeometry(slot: .standardCard))
+
+  private func center(ofSlot index: Int) throws -> CGPoint {
+    let frame = try #require(panLayout?.slots[index]).scaled(Self.panScale)
+    return CGPoint(x: frame.midX, y: frame.midY)
+  }
+
+  @Test func panTargetIsTheSelectedSlotUnderThePointer() throws {
+    let target = SheetCanvas.panTarget(
+      at: try center(ofSlot: 1), layout: panLayout, contents: [Self.firstImage, Self.secondImage],
+      selectedSlot: 1, scale: Self.panScale)
+
+    #expect(target?.slot == 1)
+    #expect(target?.image == Self.secondImage)
+  }
+
+  @Test func panTargetIgnoresAnUnselectedSlot() throws {
+    let target = SheetCanvas.panTarget(
+      at: try center(ofSlot: 0), layout: panLayout, contents: [Self.firstImage, Self.secondImage],
+      selectedSlot: 1, scale: Self.panScale)
+
+    #expect(target == nil)
+  }
+
+  @Test func panTargetIgnoresAnEmptySlot() throws {
+    let target = SheetCanvas.panTarget(
+      at: try center(ofSlot: 1), layout: panLayout, contents: [Self.firstImage, nil], selectedSlot: 1,
+      scale: Self.panScale)
+
+    #expect(target == nil)
+  }
+
+  @Test func panTargetIgnoresAPointBetweenSlots() throws {
+    let first = try #require(panLayout?.slots[0]).scaled(Self.panScale)
+    let gutter = CGPoint(
+      x: first.maxX + SheetGeometry.defaultGutter.mm * Self.panScale / 2, y: first.midY)
+
+    let target = SheetCanvas.panTarget(
+      at: gutter, layout: panLayout, contents: [Self.firstImage, Self.secondImage], selectedSlot: 0,
+      scale: Self.panScale)
+
+    #expect(target == nil)
+  }
+
   private func canvas(_ sheet: Sheet, images: ImageCache) -> SheetCanvas {
     SheetCanvas(
       sheet: sheet, geometry: sheet.geometry, scale: 1, images: images, isEditable: false,
