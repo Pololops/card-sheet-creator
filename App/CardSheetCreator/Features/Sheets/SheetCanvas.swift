@@ -138,9 +138,19 @@ struct SheetCanvas: View {
       endPan()
     case .panCancelled:
       cancelPan()
-    case .smartMagnify:
-      return false
+    case .smartMagnify(let point):
+      return recenter(at: point, layout: layout, contents: contents)
     }
+    return true
+  }
+
+  /// A two-finger double-tap on the selected image puts it back at the centre of its slot.
+  private func recenter(at point: CGPoint, layout: Domain.GridLayout?, contents: [ImageRef?]) -> Bool {
+    guard isEditable,
+      let target = Self.panTarget(
+        at: point, layout: layout, contents: contents, selectedSlot: selectedSlot, scale: scale)
+    else { return false }
+    onCropChange(.centered, target.image)
     return true
   }
 

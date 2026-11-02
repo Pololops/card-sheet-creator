@@ -66,4 +66,9 @@ final class CanvasZoom {
     mode = .custom(percent: clamped)
     return clamped != requested
   }
+
+  /// Fit shows the page at physical size; physical size or any chosen percentage goes back to fit.
+  func toggleFitAndRealSize() {
+    mode = mode == .fit ? .realSize : .fit
+  }
 }

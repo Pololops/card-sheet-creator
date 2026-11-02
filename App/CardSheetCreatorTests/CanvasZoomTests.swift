@@ -29,4 +29,30 @@ import Testing
     #expect(zoom.mode == .custom(percent: 25))
     #expect(isAtLimit)
   }
+
+  @Test func doubleTapOnFitShowsRealSize() {
+    let zoom = CanvasZoom()
+
+    zoom.toggleFitAndRealSize()
+
+    #expect(zoom.mode == .realSize)
+  }
+
+  @Test func doubleTapOnRealSizeFits() {
+    let zoom = CanvasZoom()
+    zoom.mode = .realSize
+
+    zoom.toggleFitAndRealSize()
+
+    #expect(zoom.mode == .fit)
+  }
+
+  @Test func doubleTapOnACustomZoomFits() {
+    let zoom = CanvasZoom()
+    zoom.mode = .custom(percent: 150)
+
+    zoom.toggleFitAndRealSize()
+
+    #expect(zoom.mode == .fit)
+  }
 }

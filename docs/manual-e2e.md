@@ -138,7 +138,13 @@ Run before each release, on the Canon G5000 series and at least one other printe
     over the app's window changes nothing under it. A mouse wheel still scrolls the page, and click, drag,
     arrow keys and the context menu on a slot still work.
 
+39. On a sheet, frame the selected slot's image off-centre, then double-tap with two fingers on it: it
+    snaps back to the centre, and one ⌘Z brings the framing back. Double-tap on an unselected slot, on
+    the grey canvas and on a template: the canvas toggles between *Ajuster* and *Taille réelle*, and from
+    a chosen percentage it goes back to *Ajuster*. The zoom control follows. Over the zoom control or a
+    banner it toggles the zoom too (accepted).
+
 ## Release
 
-39. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
+40. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.

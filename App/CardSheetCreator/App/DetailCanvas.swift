@@ -46,7 +46,15 @@ struct DetailCanvas: View {
         }
         .padding(.vertical, 20)
       }
+      .background(TrackpadProbe(role: .canvas, onEvent: toggleZoom))
     }
+  }
+
+  /// A two-finger double-tap that no selected image took toggles between fit and physical size.
+  private func toggleZoom(on event: TrackpadEvent) -> Bool {
+    guard case .smartMagnify = event else { return false }
+    zoom.toggleFitAndRealSize()
+    return true
   }
 
   @ViewBuilder

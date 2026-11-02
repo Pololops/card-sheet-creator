@@ -37,6 +37,8 @@ Planned work, not yet scheduled in a release.
 - **Two-finger scroll frames an image** — on a sheet, with a slot selected, scroll with two fingers over it
   to move its image inside the slot, as a single step ⌘Z undoes, with a tap of the trackpad when it
   centres. Anywhere else, the page scrolls as before.
+- **Two-finger double-tap** — double-tap with two fingers on the selected image to centre it in its slot;
+  anywhere else, it switches the canvas between *Ajuster* and *Taille réelle*.
 
 ### Changed
 
