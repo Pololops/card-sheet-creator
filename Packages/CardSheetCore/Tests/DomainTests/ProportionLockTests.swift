@@ -148,4 +148,56 @@ import Testing
 
     #expect(next == slot(500, 856))
   }
+
+  @Test func scalingKeepsTheRatio() {
+    let result = ProportionLock.scaled(.standardCard, by: 1.5, minimum: minimum, maximum: usable)
+
+    #expect(result?.slot == slot(810, 1284))
+    #expect(result?.isAtLimit == false)
+  }
+
+  @Test func scalingByOneLeavesTheSlotUnchanged() {
+    let result = ProportionLock.scaled(.standardCard, by: 1, minimum: minimum, maximum: usable)
+
+    #expect(result?.slot == .standardCard)
+    #expect(result?.isAtLimit == false)
+  }
+
+  @Test func scalingStopsAtTheMinimumSide() {
+    let result = ProportionLock.scaled(.standardCard, by: 0.1, minimum: minimum, maximum: usable)
+
+    #expect(result?.slot == slot(100, 159))
+    #expect(result?.isAtLimit == true)
+  }
+
+  @Test func scalingStopsAtTheUsableArea() {
+    let result = ProportionLock.scaled(.standardCard, by: 10, minimum: minimum, maximum: usable)
+
+    #expect(result?.slot == slot(1810, 2869))
+    #expect(result?.isAtLimit == true)
+  }
+
+  @Test func scalingFromTheSameStartDoesNotDrift() {
+    let wandering = [1.1, 1.4, 0.7, 2.0].compactMap {
+      ProportionLock.scaled(.standardCard, by: $0, minimum: minimum, maximum: usable)
+    }
+
+    let settled = ProportionLock.scaled(.standardCard, by: 1.5, minimum: minimum, maximum: usable)
+
+    #expect(wandering.count == 4)
+    #expect(settled?.slot == slot(810, 1284))
+  }
+
+  @Test func scalingADegenerateSlotGivesNothing() {
+    let result = ProportionLock.scaled(slot(0, 856), by: 1.5, minimum: minimum, maximum: usable)
+
+    #expect(result == nil)
+  }
+
+  @Test(arguments: [0.0, -1.0, Double.nan])
+  func scalingByANonPositiveFactorGivesNothing(factor: Double) {
+    let result = ProportionLock.scaled(.standardCard, by: factor, minimum: minimum, maximum: usable)
+
+    #expect(result == nil)
+  }
 }

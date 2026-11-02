@@ -42,6 +42,21 @@ public struct ProportionLock: Sendable {
     return slot
   }
 
+  /// A slot scaled by `factor` with its ratio kept, held inside `minimum` and `maximum`. Stateless: every
+  /// call starts from `slot`, so a gesture that scales one start by a moving factor cannot drift, and Domain
+  /// stays free of gesture state (ADR 0003). `nil` for a degenerate slot or a factor that is not positive.
+  public static func scaled(_ slot: SlotSize, by factor: Double, minimum: Millimeters, maximum: SlotSize)
+    -> (slot: SlotSize, isAtLimit: Bool)?
+  {
+    let lock = ProportionLock()
+    guard factor > 0, let range = lock.range(of: .width, for: slot, minimum: minimum, maximum: maximum)
+    else { return nil }
+    let requested = (Double(slot.width.tenths) * factor).rounded()
+    let clamped = min(max(requested, Double(range.lowerBound.tenths)), Double(range.upperBound.tenths))
+    let width = Millimeters(tenths: Int(clamped))
+    return (lock.resized(slot, setting: .width, to: width), clamped != requested)
+  }
+
   /// Keeps the result as the lock's own only once `apply` accepted it, so a refused edit cannot move the
   /// reference.
   public mutating func resize(

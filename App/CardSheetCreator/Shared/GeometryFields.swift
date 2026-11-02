@@ -33,13 +33,6 @@ struct GeometryFields: View {
     }
   }
 
-  private var usable: SlotSize {
-    let margin = 2 * Page.safetyMargin.tenths
-    return SlotSize(
-      width: Millimeters(tenths: Page.a4.width.tenths - margin),
-      height: Millimeters(tenths: Page.a4.height.tenths - margin))
-  }
-
   // The HIG asks for a "Constrain proportions" checkbox; a padlock between the two fields was requested
   // instead, as it reads at a glance in this dense inspector (AGENTS.md: deviations need a stated reason).
   private var lockToggle: some View {
@@ -65,7 +58,7 @@ struct GeometryFields: View {
 
   private func proportionalRange(of side: SlotSide) -> ClosedRange<Millimeters>? {
     proportions.range(
-      of: side, for: geometry.slot, minimum: Domain.GridLayout.minimumSlotSide, maximum: usable)
+      of: side, for: geometry.slot, minimum: Domain.GridLayout.minimumSlotSide, maximum: Page.usableArea)
   }
 
   private func slotField(_ side: SlotSide, label: String) -> some View {
@@ -75,7 +68,7 @@ struct GeometryFields: View {
     let lockedRange = isLocked ? proportionalRange(of: side) : nil
     return MillimeterField(
       label: label, value: lockedRange == nil ? field(path) : proportionalField(side),
-      step: Self.slotStep, range: lockedRange ?? minimum...usable[keyPath: side.keyPath],
+      step: Self.slotStep, range: lockedRange ?? minimum...Page.usableArea[keyPath: side.keyPath],
       isChanged: isChanged(path))
   }
 

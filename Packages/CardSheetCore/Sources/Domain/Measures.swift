@@ -58,6 +58,14 @@ public enum Page {
   public static let a4 = SlotSize(width: Millimeters(tenths: 2100), height: Millimeters(tenths: 2970))
   /// Kept free on every edge so no printer's unprintable area can clip a card.
   public static let safetyMargin = Millimeters(tenths: 50)
+
+  /// The page inside the safety margin: the largest area a slot may occupy.
+  public static var usableArea: SlotSize {
+    let margin = 2 * safetyMargin.tenths
+    return SlotSize(
+      width: Millimeters(tenths: a4.width.tenths - margin),
+      height: Millimeters(tenths: a4.height.tenths - margin))
+  }
 }
 
 /// A rectangle in millimetres, origin at the top-left corner of the page or slot.
