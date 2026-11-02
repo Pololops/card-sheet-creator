@@ -30,6 +30,8 @@ Planned work, not yet scheduled in a release.
 
 - **Swipe to delete** — swipe two fingers to the left over a template or a sheet in the sidebar to reveal
   a red trash, as in Mail.
+- **Pinch to zoom** — pinch on the trackpad to zoom the page between 25 % and 400 %, with a tap of the
+  trackpad when you reach a limit.
 
 ### Changed
 

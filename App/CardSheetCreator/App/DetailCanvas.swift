@@ -30,6 +30,7 @@ struct DetailCanvas: View {
             .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
             .contentShape(Rectangle())
             .onTapGesture { selectedSlot = nil }
+            .modifier(CanvasPinch(zoom: zoom, available: proxy.size))
         }
         .scrollIndicators(.automatic)
         VStack(spacing: 12) {

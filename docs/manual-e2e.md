@@ -112,7 +112,12 @@ Run before each release, on the Canon G5000 series and at least one other printe
     leaves the selection alone; *Supprimer* removes it and ⌘Z brings it back. The empty-sheets card does not
     swipe, and VoiceOver lists *Supprimer* among the row's actions.
 
+35. On a sheet, pinch two fingers on the trackpad: the whole canvas zooms (gutters, hatched band, grey
+    background and the page), the percentage in the zoom control follows, and the zoom stops at 25 % and
+    400 % with a tap of the trackpad. Do the same on a template, then check that *Ajuster* and
+    *Taille réelle* still work after a pinch.
+
 ## Release
 
-35. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
+36. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.
