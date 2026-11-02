@@ -8,6 +8,8 @@ struct MillimeterField: View {
   let step: Millimeters
   let range: ClosedRange<Millimeters>
   var isChanged = false
+  /// Tells when a − / + button goes down and up, so a held step can be one undo step.
+  var onPressChange: (Bool) -> Void = { _ in }
 
   /// Gap between the elements of a row.
   static let spacing: CGFloat = 8
@@ -60,15 +62,20 @@ struct MillimeterField: View {
 
   private func stepButton(systemImage: String, delta: Int, label: String) -> some View {
     Button {
-      value = clamped(Millimeters(tenths: value.tenths + delta))
+      step(by: delta)
     } label: {
       Image(systemName: systemImage)
         .font(.system(size: 10, weight: .bold))
         .frame(width: Self.stepSide, height: Self.stepSide)
         .contentShape(Capsule())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(StepButtonStyle(onPressChange: onPressChange))
+    .buttonRepeatBehavior(.enabled)
     .accessibilityLabel(label)
+  }
+
+  private func step(by delta: Int) {
+    value = clamped(Millimeters(tenths: value.tenths + delta))
   }
 
   private func commitText() {
@@ -83,5 +90,18 @@ struct MillimeterField: View {
 
   private func clamped(_ candidate: Millimeters) -> Millimeters {
     min(max(candidate, range.lowerBound), range.upperBound)
+  }
+}
+
+/// Looks like `.plain`, and reports the press: `Button` exposes `isPressed` to a style only.
+private struct StepButtonStyle: ButtonStyle {
+  private static let pressedOpacity = 0.55
+
+  let onPressChange: (Bool) -> Void
+
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .opacity(configuration.isPressed ? Self.pressedOpacity : 1)
+      .onChange(of: configuration.isPressed) { _, isPressed in onPressChange(isPressed) }
   }
 }

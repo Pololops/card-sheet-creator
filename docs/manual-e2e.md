@@ -124,7 +124,12 @@ Run before each release, on the Canon G5000 series and at least one other printe
     pinch: nothing is left half-applied. The padlock keeps the state it had, and the pinch stops at 10 mm
     and at the largest slot that fits the page, with a tap of the trackpad.
 
+37. In a template's inspector, hold *−* on *Largeur*: the value keeps decreasing while the slots on the
+    canvas follow, and stops at the minimum. Release: the template is saved once and one ⌘Z brings back the
+    size from before the press. Do the same with *+*, on *Hauteur* and on *Gouttière*, then with the padlock
+    open. A plain click still steps once. In a sheet's *Redimensionner* bar, hold *−* or *+*: it repeats too.
+
 ## Release
 
-37. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
+38. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.

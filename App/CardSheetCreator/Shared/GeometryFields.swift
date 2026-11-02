@@ -5,6 +5,8 @@ import SwiftUI
 struct GeometryFields: View {
   @Binding var geometry: SheetGeometry
   var original: SheetGeometry?
+  /// True while a − / + button is held, false once released.
+  var onEditingChanged: (Bool) -> Void = { _ in }
 
   private static let slotStep = Millimeters(tenths: 5)
   private static let gutterStep = Millimeters(tenths: 10)
@@ -26,7 +28,7 @@ struct GeometryFields: View {
       slotField(.height, label: "Hauteur")
       MillimeterField(
         label: "Gouttière", value: field(\.gutter), step: Self.gutterStep, range: .zero...Self.maxGutter,
-        isChanged: isChanged(\.gutter))
+        isChanged: isChanged(\.gutter), onPressChange: onEditingChanged)
       Text(rejection ?? "Cases au pas de 0,5 mm, gouttière au mm.")
         .font(Design.Typography.caption)
         .foregroundStyle(rejection == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Design.Palette.warning))
@@ -69,7 +71,7 @@ struct GeometryFields: View {
     return MillimeterField(
       label: label, value: lockedRange == nil ? field(path) : proportionalField(side),
       step: Self.slotStep, range: lockedRange ?? minimum...Page.usableArea[keyPath: side.keyPath],
-      isChanged: isChanged(path))
+      isChanged: isChanged(path), onPressChange: onEditingChanged)
   }
 
   private func field(_ keyPath: WritableKeyPath<SheetGeometry, Millimeters>) -> Binding<Millimeters> {

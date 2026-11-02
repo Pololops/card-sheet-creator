@@ -9,7 +9,7 @@ struct TemplateInspector: View {
     VStack(alignment: .leading, spacing: 20) {
       Text("Gabarit").font(Design.Typography.body.weight(.bold))
       NameField(name: template.name) { model.rename(.template(template.id), to: $0) }
-      GeometryFields(geometry: geometryBinding).id(template.id)
+      GeometryFields(geometry: geometryBinding, onEditingChanged: setGeometryEditing).id(template.id)
       CapacityCard(geometry: displayedGeometry)
       pageSection
       Spacer(minLength: 0)
@@ -21,6 +21,15 @@ struct TemplateInspector: View {
   /// The pinch's preview while one is under way, so the capacity follows the fingers.
   private var displayedGeometry: SheetGeometry {
     model.geometry(ofTemplate: template.id) ?? template.geometry
+  }
+
+  /// A held − / + button previews every step and saves them once on release: one undo step per press.
+  private func setGeometryEditing(_ isEditing: Bool) {
+    if isEditing {
+      model.beginGeometryPreview(ofTemplate: template.id)
+    } else {
+      model.commitGeometryPreview()
+    }
   }
 
   private var geometryBinding: Binding<SheetGeometry> {

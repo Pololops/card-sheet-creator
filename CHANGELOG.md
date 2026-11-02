@@ -37,6 +37,7 @@ Planned work, not yet scheduled in a release.
 
 ### Changed
 
+- Holding − or + next to a dimension now repeats the step; one ⌘Z undoes everything done during a press.
 - Every deletion now asks for confirmation, from the swipe, the context menu or the Delete key; the dialog
   names what goes away, and *Annuler* is the default
   ([ADR 0013](docs/adr/0013-confirm-every-deletion.md)). ⌘Z still brings it back.
