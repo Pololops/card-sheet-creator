@@ -26,6 +26,8 @@ Planned work, not yet scheduled in a release.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-11-02
+
 ### Added
 
 - **Swipe to delete** — swipe two fingers to the left over a template or a sheet in the sidebar to reveal
@@ -142,7 +144,8 @@ First release.
 - Liquid Glass app icon.
 - Formats: PNG, JPEG, HEIC, TIFF and PDF (first page).
 
-[Unreleased]: https://github.com/Pololops/card-sheet-creator/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Pololops/card-sheet-creator/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.2.1...v0.3.0
