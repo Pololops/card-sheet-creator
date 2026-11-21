@@ -17,7 +17,10 @@ nonisolated final class StubURLProtocol: URLProtocol {
   private struct Network {
     var responses: [URL: StubResponse] = [:]
     var requested: [URL] = []
+    var held: Set<URL> = []
   }
+
+  private static let holdPollInterval = DispatchTimeInterval.milliseconds(10)
 
   private static let network = Mutex(Network())
 
@@ -37,6 +40,19 @@ nonisolated final class StubURLProtocol: URLProtocol {
     network.withLock { $0.responses[url] = response }
   }
 
+  /// Requests to `url` stay unanswered until `release(_:)`: lets a test order two things on the network.
+  static func hold(_ url: URL) {
+    network.withLock { _ = $0.held.insert(url) }
+  }
+
+  static func release(_ url: URL) {
+    network.withLock { _ = $0.held.remove(url) }
+  }
+
+  private static func isHeld(_ url: URL) -> Bool {
+    network.withLock { $0.held.contains(url) }
+  }
+
   private static func answer(for url: URL) -> StubResponse? {
     network.withLock {
       $0.requested.append(url)
@@ -50,6 +66,21 @@ nonisolated final class StubURLProtocol: URLProtocol {
   override func startLoading() {
     guard let url = request.url else { return fail(.badURL) }
     guard let stub = Self.answer(for: url) else { return fail(.cannotFindHost) }
+    waitForRelease(of: url, then: stub)
+  }
+
+  private func waitForRelease(of url: URL, then stub: StubResponse) {
+    guard !Self.isHeld(url) else {
+      nonisolated(unsafe) let waiting = self
+      DispatchQueue.global().asyncAfter(deadline: .now() + Self.holdPollInterval) {
+        waiting.waitForRelease(of: url, then: stub)
+      }
+      return
+    }
+    respond(to: url, with: stub)
+  }
+
+  private func respond(to url: URL, with stub: StubResponse) {
     if let code = stub.failure { return fail(code) }
     guard
       let response = HTTPURLResponse(

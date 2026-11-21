@@ -145,6 +145,9 @@ final class UpdateRig {
     StubURLProtocol.serve(response, at: url)
   }
 
+  func hold(_ url: URL) { StubURLProtocol.hold(url) }
+  func release(_ url: URL) { StubURLProtocol.release(url) }
+
   /// Swaps the published archive for other bytes, signed like a genuine one.
   func replaceArchive(with bytes: Data, signedBy signer: Curve25519.Signing.PrivateKey? = nil) throws {
     archive = bytes

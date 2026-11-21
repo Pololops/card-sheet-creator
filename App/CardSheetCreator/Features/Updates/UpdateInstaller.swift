@@ -72,8 +72,9 @@ nonisolated enum UpdateInstaller {
   }
 
   /// Constant: the shell only ever sees positional arguments, never text built from a release.
-  /// A failed swap restores the old app and relaunches it; a helper that gave up waiting for the app
-  /// to exit leaves everything as it was and does not relaunch.
+  /// A failed swap restores the old app and relaunches it. A helper that gave up waiting for the app to
+  /// exit leaves the old app untouched and relaunches it once the app is gone: the app is quitting anyway,
+  /// and a slow flush to disk must still end with it reopened.
   private static let helperScript = #"""
     trap '' HUP
     pid=$1 app=$2 staged=$3 staging=$4 result=$5 opener=$6 timeout=$7
@@ -91,11 +92,17 @@ nonisolated enum UpdateInstaller {
       exit 1
     }
 
+    give_up() {
+      record_failure
+      while kill -0 "$pid" 2>/dev/null; do sleep 0.1; done
+      "$opener" "$app"
+      exit 1
+    }
+
     waited=0
     while kill -0 "$pid" 2>/dev/null; do
       if [ "$waited" -ge $((timeout * 10)) ]; then
-        record_failure
-        exit 1
+        give_up
       fi
       sleep 0.1
       waited=$((waited + 1))

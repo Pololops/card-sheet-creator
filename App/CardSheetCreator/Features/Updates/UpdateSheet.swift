@@ -32,8 +32,10 @@ struct UpdateSheet: View {
         .font(Design.Typography.body).foregroundStyle(.secondary)
     case .available(let update):
       offer(version: update.version)
-    case .downloading, .installing:
+    case .downloading:
       offer(version: controller.offeredVersion)
+    case .installing:
+      installation(of: controller.offeredVersion)
     case .failed(.network):
       title("Impossible de rechercher les mises à jour")
       Text("Vérifiez votre connexion à Internet, puis réessayez.").font(Design.Typography.body)
@@ -113,6 +115,14 @@ struct UpdateSheet: View {
     }
   }
 
+  @ViewBuilder
+  private func installation(of version: SemanticVersion?) -> some View {
+    if let version {
+      title("Installation de la version \(version.description)")
+    }
+    detail("Card Sheet Creator va redémarrer.")
+  }
+
   private func title(_ text: LocalizedStringKey) -> some View {
     Text(text).font(Design.Typography.dialogTitle)
   }
@@ -148,12 +158,8 @@ private struct DownloadFooter: View {
 /// No button: from here the app is about to quit, and there is nothing left to cancel.
 private struct InstallFooter: View {
   var body: some View {
-    VStack(alignment: .leading, spacing: 5) {
-      ProgressView().progressViewStyle(.linear)
-        .accessibilityLabel("Installation")
-      Text("Card Sheet Creator va redémarrer.")
-        .font(Design.Typography.caption).foregroundStyle(.secondary)
-    }
+    ProgressView().progressViewStyle(.linear)
+      .accessibilityLabel("Installation")
   }
 }
 

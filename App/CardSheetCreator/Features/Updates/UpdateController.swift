@@ -50,25 +50,38 @@ final class UpdateController {
   }
 
   /// Silent: only a failed swap or a newer release shows anything, every other outcome is logged at most.
+  /// `isBusy` is tested again after the network await: an install may have started meanwhile, and the
+  /// answer must not overwrite its progress.
   func checkAtLaunch() async {
     guard !isBusy else { return }
     if reportFailedSwap() { return }
+    guard let update = await launchCheckUpdate(), !isBusy else { return }
+    phase = .available(update)
+  }
+
+  /// The user asked, so unlike the launch check every outcome is answered, unless an install started meanwhile.
+  func checkFromMenu() async {
+    guard !isBusy else { return }
+    let outcome = await menuCheckOutcome()
+    guard !isBusy else { return }
+    phase = outcome
+  }
+
+  private func launchCheckUpdate() async -> AvailableUpdate? {
     do {
-      if let update = try await latestUpdate() { phase = .available(update) }
+      return try await latestUpdate()
     } catch {
       Self.logger.error("Launch update check failed: \(error.localizedDescription)")
+      return nil
     }
   }
 
-  /// The user asked, so unlike the launch check every outcome is answered.
-  func checkFromMenu() async {
-    guard !isBusy else { return }
+  private func menuCheckOutcome() async -> Phase {
     do {
-      let update = try await latestUpdate()
-      phase = update.map(Phase.available) ?? .upToDate
+      return try await latestUpdate().map(Phase.available) ?? .upToDate
     } catch {
       Self.logger.error("Menu update check failed: \(error.localizedDescription)")
-      phase = .failed(.network)
+      return .failed(.network)
     }
   }
 
@@ -87,7 +100,10 @@ final class UpdateController {
   }
 
   func cancel() { installation?.cancel() }
-  func dismiss() { phase = nil }
+  func dismiss() {
+    guard !isBusy else { return }
+    phase = nil
+  }
 
   func revealApp() {
     NSWorkspace.shared.activateFileViewerSelecting([context.installedApp])
@@ -103,7 +119,7 @@ final class UpdateController {
       try await installation.value
     } catch is CancellationError {
       phase = .available(update)
-    } catch is UpdateVerification.VerificationError {
+    } catch is UpdateVerification.VerificationError, UpdateInstaller.InstallerError.appMissingFromArchive {
       Self.logger.error("Downloaded update refused: not authentic")
       phase = .failed(.notAuthentic)
     } catch {
@@ -143,11 +159,16 @@ final class UpdateController {
   }
 
   /// Fetched like the archive, so that a server cannot make the app hold more than a signature in memory.
+  /// A file longer than a signature is no signature: that is an integrity failure, not a failed download.
   private func downloadSignature(_ url: URL, into staging: URL) async throws -> Data {
     let file = staging.appending(path: "CardSheetCreator.zip.sig")
-    try await UpdateDownload.fetch(
-      url, to: file, sizeLimit: UpdateVerification.signatureSize, configuration: context.configuration,
-      onProgress: { _ in })
+    do {
+      try await UpdateDownload.fetch(
+        url, to: file, sizeLimit: UpdateVerification.signatureSize, configuration: context.configuration,
+        onProgress: { _ in })
+    } catch UpdateDownload.DownloadError.exceededSizeLimit {
+      throw UpdateVerification.VerificationError.notAuthentic
+    }
     return try Data(contentsOf: file)
   }
 

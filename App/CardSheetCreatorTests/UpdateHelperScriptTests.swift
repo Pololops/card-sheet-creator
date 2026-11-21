@@ -190,4 +190,22 @@ import Testing
     #expect(!exists(relaunchMarker))
     #expect(!exists(staging))
   }
+
+  @Test func relaunchesTheOldAppWhenTheAppExitsAfterTheHelperGaveUp() async throws {
+    let sleeperID = try startSleeper(seconds: 30)
+    defer { kill(sleeperID, SIGKILL) }
+    try UpdateInstaller.launchHelper(job(processID: sleeperID, timeoutSeconds: 1))
+    let gaveUp = await UpdateFixtures.eventually(timeout: .seconds(10)) { exists(resultFile) }
+    try #require(gaveUp, "the helper never gave up")
+    let relaunchedWhileStillRunning = exists(relaunchMarker)
+
+    kill(sleeperID, SIGKILL)
+    let relaunched = await waitForRelaunch()
+
+    #expect(!relaunchedWhileStillRunning)
+    #expect(relaunched)
+    #expect(try String(contentsOf: relaunchMarker, encoding: .utf8) == app.path)
+    #expect(try installedVersion() == "old")
+    #expect(try String(contentsOf: resultFile, encoding: .utf8) == "failed\n")
+  }
 }
