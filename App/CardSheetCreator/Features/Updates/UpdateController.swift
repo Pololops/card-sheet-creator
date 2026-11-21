@@ -48,7 +48,7 @@ final class UpdateController {
   /// `isBusy` is tested again after the network await: an install may have started meanwhile, and the
   /// answer must not overwrite its progress.
   func checkAtLaunch() async {
-    guard !isBusy, !reportFailedSwap() else { return }
+    guard !isBusy, !showFailedSwapIfReported() else { return }
     let outcome = await checkOutcome()
     guard case .available = outcome else { return }
     apply(outcome)
@@ -93,7 +93,7 @@ final class UpdateController {
       return
     }
     offeredVersion = update.version
-    phase = .downloading(received: 0, total: Int64(update.archiveSize))
+    phase = .downloading(received: 0, total: update.archiveByteCount)
     let installation = Task { try await stageAndLaunch(update) }
     self.installation = installation
     await conclude(installation, of: update)
@@ -145,7 +145,7 @@ final class UpdateController {
 
   private func downloadAndVerify(_ update: AvailableUpdate, into staging: URL) async throws -> URL {
     let archive = staging.appending(path: LatestRelease.archiveName)
-    let total = Int64(update.archiveSize)
+    let total = update.archiveByteCount
     try await UpdateDownload.fetch(
       update.archive, to: archive, sizeLimit: update.archiveSize, configuration: context.configuration,
       onProgress: { received in Task { @MainActor in self.record(received: received, of: total) } })
@@ -185,32 +185,14 @@ final class UpdateController {
     }
   }
 
-  /// The helper that swaps the bundle cannot show anything itself: it leaves a file for the next launch.
-  private func reportFailedSwap() -> Bool {
-    guard FileManager.default.fileExists(atPath: context.resultFile.path) else { return false }
-    do {
-      try FileManager.default.removeItem(at: context.resultFile)
-    } catch {
-      Self.logger.error("Update result file not removed: \(error.localizedDescription)")
-    }
+  /// A failed swap is shown like any other failed install: the sheet opens on it.
+  private func showFailedSwapIfReported() -> Bool {
+    guard UpdateInstaller.consumeFailedSwapResult(at: context.resultFile) else { return false }
     phase = .failed(.installFailed)
     return true
   }
 
   private func latestUpdate() async throws -> AvailableUpdate? {
-    try await fetchLatestRelease().update(over: context.installedVersion)
-  }
-
-  private func fetchLatestRelease() async throws -> LatestRelease {
-    let session = URLSession(configuration: context.configuration)
-    defer { session.finishTasksAndInvalidate() }
-    var request = URLRequest(url: LatestRelease.endpoint)
-    request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-    let (body, response) = try await session.data(for: request)
-    let status = (response as? HTTPURLResponse)?.statusCode
-    guard status == UpdateDownload.successStatus else {
-      throw UpdateDownload.DownloadError.unexpectedStatus(status)
-    }
-    return try JSONDecoder().decode(LatestRelease.self, from: body)
+    try await ReleaseFeed.latest(configuration: context.configuration).update(over: context.installedVersion)
   }
 }

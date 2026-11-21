@@ -8,7 +8,8 @@ struct StagedUpdate: Equatable {
   let staging: URL
 }
 
-/// Everything the updater touches outside the process: network, disk, trust and the relaunch.
+/// The boundaries a test swaps: the session configuration, the installed app and its version, the trusted key,
+/// the result file, and the install policy (where an install is allowed, how the relaunch happens).
 struct UpdateContext {
   var configuration: URLSessionConfiguration
   var installedApp: URL

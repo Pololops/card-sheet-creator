@@ -67,6 +67,8 @@ extension FileLibraryStore {
   private static func restoreInterim(_ setAside: URL?, to target: URL) {
     let fileManager = FileManager.default
     guard let setAside, !fileManager.fileExists(atPath: target.path) else { return }
+    // Best effort on purpose: the caller rethrows the original error, and should this restore fail too,
+    // the interim library stays under its dated name, nothing deleted.
     try? fileManager.moveItem(at: setAside, to: target)
   }
 

@@ -4,7 +4,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-version="${1:?Usage: scripts/release.sh <version>}"
+version="${1:-}"
+[[ $version =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] \
+  || { echo "Usage: scripts/release.sh <x.y.z>" >&2; exit 1; }
 archive=".build/release/CardSheetCreator.xcarchive"
 zip="dist/CardSheetCreator.zip"
 

@@ -76,6 +76,8 @@ public struct AvailableUpdate: Equatable, Sendable {
   public let archive: URL
   public let archiveSize: Int
   public let signature: URL
+
+  public var archiveByteCount: Int64 { Int64(archiveSize) }
 }
 
 public enum ReleaseError: Error, Equatable {

@@ -81,10 +81,18 @@ nonisolated final class UpdateDownload: NSObject, URLSessionDownloadDelegate, Se
 
   private var isSettled: Bool { state.withLock { $0.outcome != nil } }
 
+  /// The status is read before the size: an error page longer than the limit is a failed request,
+  /// not an oversized file.
   func urlSession(
     _ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64,
     totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64
   ) {
+    let status = (downloadTask.response as? HTTPURLResponse)?.statusCode
+    guard status == Self.successStatus else {
+      settle(.failure(DownloadError.unexpectedStatus(status)))
+      downloadTask.cancel()
+      return
+    }
     guard totalBytesWritten <= sizeLimit else {
       settle(.failure(DownloadError.exceededSizeLimit))
       downloadTask.cancel()

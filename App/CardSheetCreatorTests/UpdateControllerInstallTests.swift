@@ -129,6 +129,22 @@ extension UpdateControllerTests {
     #expect(rig.launchAttempts.isEmpty)
   }
 
+  /// An error body longer than a signature must not turn a server failure into an integrity failure.
+  @Test(arguments: [403, 429, 500], ["archive", "signature"])
+  func aRefusalWithALongBodyFailsTheInstallAndRemovesTheStaging(status: Int, asset: String) async throws {
+    let controller = try await rig.offeredController()
+    let stagingBefore = rig.stagingFolderCount
+    let errorPage = StubResponse(status: status, body: Data(repeating: 0x3C, count: 1_024))
+    rig.serve(errorPage, at: asset == "archive" ? rig.archiveURL : rig.signatureURL)
+
+    await controller.install()
+
+    let stagingRemoved = await UpdateFixtures.eventually { rig.stagingFolderCount <= stagingBefore }
+    #expect(controller.phase == .failed(.installFailed))
+    #expect(rig.launchAttempts.isEmpty)
+    #expect(stagingRemoved)
+  }
+
   @Test func aRefusedRelaunchFailsTheInstallAndRemovesTheStaging() async throws {
     let controller = try await rig.offeredController()
     rig.launchFailure = LaunchRefused()

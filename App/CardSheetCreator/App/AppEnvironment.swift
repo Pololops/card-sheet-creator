@@ -51,7 +51,8 @@ final class AppEnvironment {
   }
 
   /// Returns whether adoption failed. A failure is not fatal: the app starts on an interim library and retries
-  /// at the next launch.
+  /// at the next launch. It runs synchronously on the main thread before the first window on purpose: the store
+  /// needs its root at init and the copy must not race it, and once the marker exists it costs one file check.
   private static func adoptSandboxedLibrary(into root: URL) -> Bool {
     guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return false }
     let container = FileLibraryStore.sandboxedRoot(bundleIdentifier: bundleIdentifier, home: .homeDirectory)

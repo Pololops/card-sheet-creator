@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 // Why: see docs/adr/0014-signed-in-app-updates.md (a detached helper swaps the bundle once the app has quit).
 struct HelperJob {
@@ -16,6 +17,7 @@ nonisolated enum UpdateInstaller {
     case extractionFailed(status: Int32)
   }
 
+  private static let logger = Logger(subsystem: "com.pololops.CardSheetCreator", category: "updates")
   private static let translocationMarker = "/AppTranslocation/"
   private static let stagingPermissions = 0o700
   private static let extractedFolderName = "extracted"
@@ -76,6 +78,18 @@ nonisolated enum UpdateInstaller {
     helper.standardOutput = FileHandle.nullDevice
     helper.standardError = FileHandle.nullDevice
     try helper.run()
+  }
+
+  /// The helper that swaps the bundle cannot show anything itself: it leaves a file for the next launch.
+  /// Returns whether it found one; the file is consumed so that the failure is reported once.
+  static func consumeFailedSwapResult(at resultFile: URL) -> Bool {
+    guard FileManager.default.fileExists(atPath: resultFile.path) else { return false }
+    do {
+      try FileManager.default.removeItem(at: resultFile)
+    } catch {
+      logger.error("Update result file not removed: \(error.localizedDescription)")
+    }
+    return true
   }
 
   /// Constant: the shell only ever sees positional arguments, never text built from a release.

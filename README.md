@@ -106,7 +106,8 @@ scripts/release.sh 1.0.0   # universal build, ad-hoc signed, zipped, signed with
 The app only installs archives signed with an Ed25519 key. Set it up once:
 
 1. `swift scripts/update-signing.swift generate` prints a key pair and the
-   `security add-generic-password …` command that stores the private key in your login Keychain.
+   `security add-generic-password …` command that stores the private key in your login Keychain. Its `-T ""`
+   trusts no application: macOS asks for your login password each time `release.sh` reads the key.
 2. Back the private key up offline: without it no update can be signed again.
 3. Embed the public key in `App/CardSheetCreator/Features/Updates/UpdateVerification.swift`.
 

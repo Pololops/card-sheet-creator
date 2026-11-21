@@ -43,7 +43,9 @@ func generate() {
   print("PRIVATE KEY (shown once, never stored by this script):")
   print(key.rawRepresentation.base64EncodedString())
   print("\nStore it in your login Keychain, pasting the private key at the prompt:")
-  print("security add-generic-password -a \"$USER\" -s \(keychainService) -w")
+  // Why: `-T ""` trusts no application, so macOS asks for the login password on every read of the key
+  // instead of handing it to any process that runs as this user.
+  print("security add-generic-password -a \"$USER\" -s \(keychainService) -T \"\" -w")
   print("\nPUBLIC KEY (embed it in UpdateVerification.swift):")
   print(key.publicKey.rawRepresentation.base64EncodedString())
   print("\nBack the private key up offline now: without it no update can ever be signed again.")
