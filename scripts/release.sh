@@ -25,6 +25,8 @@ ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
 public=$(security find-generic-password -a "$USER" -s card-sheet-creator-update-signing -w \
   | swift scripts/update-signing.swift sign "$zip")
 echo "Signed $zip (public key $public)."
+grep -qF "$public" App/CardSheetCreator/Features/Updates/UpdateVerification.swift \
+  || { echo "Signing key does not match the app's embedded public key" >&2; exit 1; }
 
 gh release create "v$version" "$zip" "$zip.sig" --title "Card Sheet Creator $version" --generate-notes
 echo "Published v$version."
