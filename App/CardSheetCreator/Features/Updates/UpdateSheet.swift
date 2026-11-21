@@ -28,8 +28,7 @@ struct UpdateSheet: View {
     switch controller.phase {
     case .upToDate:
       title("Card Sheet Creator est à jour")
-      Text("La version \(controller.installedVersion.description) est la plus récente.")
-        .font(Design.Typography.body).foregroundStyle(.secondary)
+      detail("La version \(controller.installedVersion.description) est la plus récente.")
     case .available(let update):
       offer(version: update.version)
     case .downloading:
@@ -74,27 +73,20 @@ struct UpdateSheet: View {
   private var buttons: some View {
     switch controller.phase {
     case .upToDate, .failed(.notAuthentic), .failed(.installFailed):
-      Button("OK", action: controller.dismiss)
-        .keyboardShortcut(.defaultAction)
-        .buttonStyle(.glassProminent)
+      Button("OK", action: controller.dismiss).primaryAction()
     case .available:
       Button("Plus tard", action: controller.dismiss)
         .keyboardShortcut(.cancelAction)
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
+        .secondaryAction()
       Button("Redémarrer et installer") { Task { await controller.install() } }
-        .keyboardShortcut(.defaultAction)
-        .buttonStyle(.glassProminent)
+        .primaryAction()
     case .failed(.network):
       dismissButton
       Button("Réessayer") { Task { await controller.checkFromMenu() } }
-        .keyboardShortcut(.defaultAction)
-        .buttonStyle(.glassProminent)
+        .primaryAction()
     case .failed(.location):
       dismissButton
-      Button("Afficher dans le Finder", action: controller.revealApp)
-        .keyboardShortcut(.defaultAction)
-        .buttonStyle(.glassProminent)
+      Button("Afficher dans le Finder", action: controller.revealApp).primaryAction()
     case .downloading, .installing, nil:
       EmptyView()
     }
@@ -103,8 +95,7 @@ struct UpdateSheet: View {
   private var dismissButton: some View {
     Button("OK", action: controller.dismiss)
       .keyboardShortcut(.cancelAction)
-      .buttonStyle(.bordered)
-      .buttonBorderShape(.capsule)
+      .secondaryAction()
   }
 
   @ViewBuilder
@@ -145,8 +136,7 @@ private struct DownloadFooter: View {
           .accessibilityLabel("Téléchargement")
         Button("Annuler", action: cancel)
           .keyboardShortcut(.cancelAction)
-          .buttonStyle(.bordered)
-          .buttonBorderShape(.capsule)
+          .secondaryAction()
           .controlSize(.large)
       }
       Text(UpdateController.downloadLabel(received: received, total: total))

@@ -25,8 +25,9 @@ ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
 public=$(security find-generic-password -a "$USER" -s card-sheet-creator-update-signing -w \
   | swift scripts/update-signing.swift sign "$zip")
 echo "Signed $zip (public key $public)."
-# An empty key would match any line, so it is refused first; the quotes pin the key to a whole string literal.
-[[ -n "$public" ]] && grep -qF "\"$public\"" App/CardSheetCreator/Features/Updates/UpdateVerification.swift \
+# Strict equality with the embedded literal: a substring match, or an empty key, must not pass.
+embedded=$(sed -n 's/.*publicKeyBase64 = "\([^"]*\)".*/\1/p' App/CardSheetCreator/Features/Updates/UpdateVerification.swift)
+[[ -n "$public" && "$public" == "$embedded" ]] \
   || { echo "Signing key does not match the app's embedded public key" >&2; exit 1; }
 
 gh release create "v$version" "$zip" "$zip.sig" --title "Card Sheet Creator $version" --generate-notes

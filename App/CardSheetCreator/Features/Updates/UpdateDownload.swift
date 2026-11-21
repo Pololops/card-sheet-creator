@@ -17,7 +17,7 @@ nonisolated final class UpdateDownload: NSObject, URLSessionDownloadDelegate, Se
     var lastReportedPercent = -1
   }
 
-  private static let successStatus = 200
+  static let successStatus = 200
   private static let fullPercent = 100
 
   private let destination: URL

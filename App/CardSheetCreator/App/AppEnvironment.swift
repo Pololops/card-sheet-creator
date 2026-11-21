@@ -47,19 +47,20 @@ final class AppEnvironment {
         "CardSheetCreator-\(UUID().uuidString)")
       return (throwaway, false)
     }
-    return (root, !adoptSandboxedLibrary(into: root))
+    return (root, adoptSandboxedLibrary(into: root))
   }
 
-  /// A failure is not fatal: the app starts on an interim library and retries at the next launch.
+  /// Returns whether adoption failed. A failure is not fatal: the app starts on an interim library and retries
+  /// at the next launch.
   private static func adoptSandboxedLibrary(into root: URL) -> Bool {
-    guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return true }
+    guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return false }
     let container = FileLibraryStore.sandboxedRoot(bundleIdentifier: bundleIdentifier, home: .homeDirectory)
     do {
       try FileLibraryStore.adoptSandboxedLibrary(from: container, into: root)
-      return true
+      return false
     } catch {
       logger.error("Library adoption failed: \(error.localizedDescription)")
-      return false
+      return true
     }
   }
 }

@@ -21,7 +21,7 @@ private struct UpdatePresentation: ViewModifier {
           .interactiveDismissDisabled(controller.isBusy)
       }
       // `initial` catches an answer that arrived before this window was on screen.
-      .onChange(of: controller.phase != nil, initial: true) { syncPresentation() }
+      .onChange(of: controller.isPresenting, initial: true) { syncPresentation() }
       .onChange(of: isBlocked) { syncPresentation() }
   }
 
@@ -30,7 +30,7 @@ private struct UpdatePresentation: ViewModifier {
   }
 
   private func syncPresentation() {
-    if controller.phase == nil {
+    if !controller.isPresenting {
       isShown = false
     } else if !isBlocked {
       isShown = true

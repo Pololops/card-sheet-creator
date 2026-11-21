@@ -29,10 +29,10 @@ public struct LatestRelease: Decodable, Sendable {
   /// Bounds what a release may ask the app to download and unpack; the real archive is ~20 MB.
   public static let maximumArchiveSize = 200_000_000
   /// An Ed25519 signature is always 64 bytes: any other size is not a signature, and is never fetched.
-  private static let signatureSize = 64
+  public static let signatureSize = 64
 
-  private static let archiveName = "CardSheetCreator.zip"
-  private static let signatureName = "CardSheetCreator.zip.sig"
+  public static let archiveName = "CardSheetCreator.zip"
+  public static let signatureName = "CardSheetCreator.zip.sig"
   private static let trustedHost = "github.com"
   private static let trustedPathPrefix = "/Pololops/card-sheet-creator/releases/download/"
 

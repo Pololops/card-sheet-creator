@@ -22,14 +22,16 @@ final class UpdateController {
     case failed(Failure)
   }
 
-  private struct UnexpectedStatus: Error {
-    let code: Int?
-  }
-
+  private static let byteCountStyle = ByteCountFormatStyle(style: .file, locale: Locale(identifier: "fr_FR"))
   private static let logger = Logger(subsystem: "com.pololops.CardSheetCreator", category: "updates")
-  private static let successStatus = 200
 
-  private(set) var phase: Phase?
+  private(set) var phase: Phase? {
+    didSet { refreshPhaseFlags() }
+  }
+  /// Stored rather than derived from `phase`: a download ticks `phase` many times, and observers of these
+  /// flags (the menu, the presentation) must only rebuild when the flag itself flips.
+  private(set) var isBusy = false
+  private(set) var isPresenting = false
   /// The sheet keeps showing the version on offer while it downloads and installs it.
   private(set) var offeredVersion: SemanticVersion?
 
@@ -42,47 +44,45 @@ final class UpdateController {
 
   var installedVersion: SemanticVersion { context.installedVersion }
 
-  var isBusy: Bool {
-    switch phase {
-    case .downloading, .installing: true
-    case .upToDate, .available, .failed, nil: false
-    }
-  }
-
   /// Silent: only a failed swap or a newer release shows anything, every other outcome is logged at most.
   /// `isBusy` is tested again after the network await: an install may have started meanwhile, and the
   /// answer must not overwrite its progress.
   func checkAtLaunch() async {
-    guard !isBusy else { return }
-    if reportFailedSwap() { return }
-    guard let update = await launchCheckUpdate(), !isBusy else { return }
-    phase = .available(update)
+    guard !isBusy, !reportFailedSwap() else { return }
+    let outcome = await checkOutcome()
+    guard case .available = outcome else { return }
+    apply(outcome)
   }
 
   /// The user asked, so unlike the launch check every outcome is answered, unless an install started meanwhile.
   func checkFromMenu() async {
     guard !isBusy else { return }
-    let outcome = await menuCheckOutcome()
+    apply(await checkOutcome())
+  }
+
+  private func checkOutcome() async -> Phase {
+    do {
+      return try await latestUpdate().map(Phase.available) ?? .upToDate
+    } catch {
+      Self.logger.error("Update check failed: \(error.localizedDescription)")
+      return .failed(.network)
+    }
+  }
+
+  private func apply(_ outcome: Phase) {
     guard !isBusy else { return }
     phase = outcome
   }
 
-  private func launchCheckUpdate() async -> AvailableUpdate? {
-    do {
-      return try await latestUpdate()
-    } catch {
-      Self.logger.error("Launch update check failed: \(error.localizedDescription)")
-      return nil
-    }
-  }
-
-  private func menuCheckOutcome() async -> Phase {
-    do {
-      return try await latestUpdate().map(Phase.available) ?? .upToDate
-    } catch {
-      Self.logger.error("Menu update check failed: \(error.localizedDescription)")
-      return .failed(.network)
-    }
+  private func refreshPhaseFlags() {
+    let isInstalling =
+      switch phase {
+      case .downloading, .installing: true
+      case .upToDate, .available, .failed, nil: false
+      }
+    if isInstalling != isBusy { isBusy = isInstalling }
+    let isOpen = phase != nil
+    if isOpen != isPresenting { isPresenting = isOpen }
   }
 
   /// Ignored unless an update is on offer: a second tap while one install runs starts nothing.
@@ -110,8 +110,7 @@ final class UpdateController {
   }
 
   static func downloadLabel(received: Int64, total: Int64) -> String {
-    let style = ByteCountFormatStyle(style: .file, locale: Locale(identifier: "fr_FR"))
-    return "Téléchargement… \(received.formatted(style)) sur \(total.formatted(style))"
+    "Téléchargement… \(received.formatted(byteCountStyle)) sur \(total.formatted(byteCountStyle))"
   }
 
   private func conclude(_ installation: Task<Void, any Error>, of update: AvailableUpdate) async {
@@ -119,7 +118,7 @@ final class UpdateController {
       try await installation.value
     } catch is CancellationError {
       phase = .available(update)
-    } catch is UpdateVerification.VerificationError, UpdateInstaller.InstallerError.appMissingFromArchive {
+    } catch is UpdateVerification.VerificationError {
       Self.logger.error("Downloaded update refused: not authentic")
       phase = .failed(.notAuthentic)
     } catch {
@@ -145,7 +144,7 @@ final class UpdateController {
   }
 
   private func downloadAndVerify(_ update: AvailableUpdate, into staging: URL) async throws -> URL {
-    let archive = staging.appending(path: "CardSheetCreator.zip")
+    let archive = staging.appending(path: LatestRelease.archiveName)
     let total = Int64(update.archiveSize)
     try await UpdateDownload.fetch(
       update.archive, to: archive, sizeLimit: update.archiveSize, configuration: context.configuration,
@@ -161,10 +160,10 @@ final class UpdateController {
   /// Fetched like the archive, so that a server cannot make the app hold more than a signature in memory.
   /// A file longer than a signature is no signature: that is an integrity failure, not a failed download.
   private func downloadSignature(_ url: URL, into staging: URL) async throws -> Data {
-    let file = staging.appending(path: "CardSheetCreator.zip.sig")
+    let file = staging.appending(path: LatestRelease.signatureName)
     do {
       try await UpdateDownload.fetch(
-        url, to: file, sizeLimit: UpdateVerification.signatureSize, configuration: context.configuration,
+        url, to: file, sizeLimit: LatestRelease.signatureSize, configuration: context.configuration,
         onProgress: { _ in })
     } catch UpdateDownload.DownloadError.exceededSizeLimit {
       throw UpdateVerification.VerificationError.notAuthentic
@@ -209,7 +208,9 @@ final class UpdateController {
     request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
     let (body, response) = try await session.data(for: request)
     let status = (response as? HTTPURLResponse)?.statusCode
-    guard status == Self.successStatus else { throw UnexpectedStatus(code: status) }
+    guard status == UpdateDownload.successStatus else {
+      throw UpdateDownload.DownloadError.unexpectedStatus(status)
+    }
     return try JSONDecoder().decode(LatestRelease.self, from: body)
   }
 }

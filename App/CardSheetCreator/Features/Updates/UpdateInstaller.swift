@@ -14,7 +14,6 @@ struct HelperJob {
 nonisolated enum UpdateInstaller {
   enum InstallerError: Error {
     case extractionFailed(status: Int32)
-    case appMissingFromArchive
   }
 
   private static let translocationMarker = "/AppTranslocation/"
@@ -40,20 +39,28 @@ nonisolated enum UpdateInstaller {
     return staging
   }
 
-  /// Unpacks `archive` next to it and returns the app found inside.
-  @concurrent static func extract(archive: URL, into staging: URL) async throws -> URL {
+  /// Unpacks `archive` next to it and returns where the app is expected: a missing or foreign bundle is
+  /// refused by the bundle verification that follows, not here.
+  static func extract(archive: URL, into staging: URL) async throws -> URL {
     let destination = staging.appending(path: extractedFolderName)
     let ditto = Process()
     ditto.executableURL = URL(filePath: "/usr/bin/ditto")
     ditto.arguments = ["-x", "-k", archive.path, destination.path]
-    try ditto.run()
-    ditto.waitUntilExit()
-    guard ditto.terminationStatus == 0 else {
-      throw InstallerError.extractionFailed(status: ditto.terminationStatus)
+    let status = try await run(ditto)
+    guard status == 0 else { throw InstallerError.extractionFailed(status: status) }
+    return destination.appending(path: appName)
+  }
+
+  /// The handler resumes once the process exits, so no thread sits blocked while `ditto` unpacks.
+  private static func run(_ process: Process) async throws -> Int32 {
+    try await withCheckedThrowingContinuation { continuation in
+      process.terminationHandler = { continuation.resume(returning: $0.terminationStatus) }
+      do {
+        try process.run()
+      } catch {
+        continuation.resume(throwing: error)
+      }
     }
-    let app = destination.appending(path: appName)
-    guard FileManager.default.fileExists(atPath: app.path) else { throw InstallerError.appMissingFromArchive }
-    return app
   }
 
   /// The helper outlives the app and shares none of its pipes: with stdio on the null device and SIGHUP

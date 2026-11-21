@@ -10,9 +10,6 @@ nonisolated enum UpdateVerification {
     case unexpectedBundle
   }
 
-  /// An Ed25519 signature is always 64 bytes: any other size is not a signature.
-  static let signatureSize = 64
-
   /// Base64 of the public key that `scripts/update-signing.swift` prints. `release.sh` refuses to publish
   /// with a signing key that does not appear here, so no release can ship while this is empty.
   private static let publicKeyBase64 = ""
@@ -24,7 +21,7 @@ nonisolated enum UpdateVerification {
 
   /// Fails closed: anything short of a valid signature over the exact bytes of `archive` throws.
   @concurrent static func verifySignature(archive: URL, signature: Data, publicKey: Data) async throws {
-    guard signature.count == signatureSize else { throw VerificationError.notAuthentic }
+    guard signature.count == LatestRelease.signatureSize else { throw VerificationError.notAuthentic }
     let key = try trustedKey(from: publicKey)
     let archiveBytes = try Data(contentsOf: archive, options: .mappedIfSafe)
     guard key.isValidSignature(signature, for: archiveBytes) else { throw VerificationError.notAuthentic }

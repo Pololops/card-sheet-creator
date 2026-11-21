@@ -1,6 +1,7 @@
 import AppKit
 import Domain
 import Foundation
+import Storage
 
 struct StagedUpdate: Equatable {
   let app: URL
@@ -22,8 +23,12 @@ struct UpdateContext {
   /// How long the helper waits for the app to finish quitting (library flush included) before giving up.
   private static let quitTimeoutSeconds = 30
   private static let opener = URL(filePath: "/usr/bin/open")
-  private static let resultFile =
-    URL.applicationSupportDirectory.appending(path: "CardSheetCreator/update-result")
+  /// Beside the library, in the app's own support folder. Where that folder cannot be made, the library runs
+  /// on a throwaway one too (see `AppEnvironment`): the result then goes to the temporary directory.
+  private static let resultFile = supportDirectory.appending(path: "update-result")
+  private static let supportDirectory =
+    (try? FileLibraryStore.defaultRoot())?.deletingLastPathComponent()
+    ?? FileManager.default.temporaryDirectory
 
   static func live() -> UpdateContext {
     let configuration = URLSessionConfiguration.ephemeral
