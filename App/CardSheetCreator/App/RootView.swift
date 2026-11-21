@@ -18,12 +18,14 @@ struct RootView: View {
   @State private var resizeDraft: ResizeDraft?
   @State private var selectedSlot: Int?
   @State private var calibrationFailure: String?
+  @State private var isRecoveryNoticeShown: Bool
   @Environment(\.undoManager) private var undoManager
   @Environment(\.openWindow) private var openWindow
 
   init(environment: AppEnvironment) {
     self.environment = environment
     model = environment.model
+    _isRecoveryNoticeShown = State(initialValue: environment.hasPendingRecoveryNotice)
   }
 
   var body: some View {
@@ -82,6 +84,13 @@ struct RootView: View {
       Button("OK") {}
     } message: {
       Text(calibrationFailure ?? "")
+    }
+    .alert("Votre bibliothèque n’a pas encore été récupérée", isPresented: $isRecoveryNoticeShown) {
+      Button("OK") {}
+    } message: {
+      Text(
+        "Vos gabarits et planches de la version précédente n’ont pas pu être copiés. Card Sheet Creator réessaiera au prochain lancement."
+      )
     }
     .colorCalibrationHandoff(
       route: environment.calibrationRoute, library: model,

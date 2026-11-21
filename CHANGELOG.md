@@ -26,6 +26,12 @@ Planned work, not yet scheduled in a release.
 
 ## [Unreleased]
 
+### Changed
+
+- **Library location** — your templates and sheets now live in `~/Library/Application Support/CardSheetCreator/Library`.
+  The first launch copies them from the previous version, and tries again at the next launch if the copy
+  fails. Relaunching 0.6.0 or earlier shows its own separate library.
+
 ## [0.6.0] — 2026-11-02
 
 ### Added
