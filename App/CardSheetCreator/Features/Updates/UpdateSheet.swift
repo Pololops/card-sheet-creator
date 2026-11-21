@@ -4,7 +4,7 @@ import SwiftUI
 
 // Why: see docs/adr/0010-ui-direction.md (HIG and Liquid Glass: the print dialog's construction, native
 // controls) and docs/adr/0002-native-swift-swiftui.md (Swift 6 and SwiftUI, targeting macOS 26).
-/// What the updater tells the user: an answer to the menu check, or an update on offer.
+/// What the updater tells the user: an answer to the menu check, an update on offer, or its progress.
 struct UpdateSheet: View {
   let controller: UpdateController
 
@@ -31,47 +31,129 @@ struct UpdateSheet: View {
       Text("La version \(controller.installedVersion.description) est la plus récente.")
         .font(Design.Typography.body).foregroundStyle(.secondary)
     case .available(let update):
-      title("Une nouvelle version est disponible")
-      VersionChips(installed: controller.installedVersion, offered: update.version)
+      offer(version: update.version)
+    case .downloading, .installing:
+      offer(version: controller.offeredVersion)
     case .failed(.network):
       title("Impossible de rechercher les mises à jour")
       Text("Vérifiez votre connexion à Internet, puis réessayez.").font(Design.Typography.body)
-    default:
+    case .failed(.notAuthentic):
+      title("La mise à jour n’a pas été installée")
+      detail("Le fichier téléchargé n’est pas authentique. Votre version actuelle n’a pas été modifiée.")
+    case .failed(.location):
+      title("Installation impossible depuis cet emplacement")
+      detail(
+        "Déplacez Card Sheet Creator dans le dossier Applications, ouvrez-le, puis relancez la mise à jour.")
+    case .failed(.installFailed):
+      title("La mise à jour n’a pas été installée")
+      detail("Votre version actuelle n’a pas été modifiée. Réessayez plus tard.")
+    case nil:
       EmptyView()
     }
   }
 
   @ViewBuilder
   private var footer: some View {
-    HStack(spacing: 10) {
-      Spacer()
-      switch controller.phase {
-      case .upToDate:
-        Button("OK", action: controller.dismiss)
-          .keyboardShortcut(.defaultAction)
-          .buttonStyle(.glassProminent)
-      case .available:
-        Button("Plus tard", action: controller.dismiss)
-          .keyboardShortcut(.cancelAction)
-          .buttonStyle(.bordered)
-          .buttonBorderShape(.capsule)
-      case .failed(.network):
-        Button("OK", action: controller.dismiss)
-          .keyboardShortcut(.cancelAction)
-          .buttonStyle(.bordered)
-          .buttonBorderShape(.capsule)
-        Button("Réessayer") { Task { await controller.checkFromMenu() } }
-          .keyboardShortcut(.defaultAction)
-          .buttonStyle(.glassProminent)
-      default:
-        EmptyView()
+    switch controller.phase {
+    case .downloading(let received, let total):
+      DownloadFooter(received: received, total: total, cancel: controller.cancel)
+    case .installing:
+      InstallFooter()
+    case .upToDate, .available, .failed, nil:
+      HStack(spacing: 10) {
+        Spacer()
+        buttons
       }
+      .controlSize(.large)
     }
-    .controlSize(.large)
+  }
+
+  @ViewBuilder
+  private var buttons: some View {
+    switch controller.phase {
+    case .upToDate, .failed(.notAuthentic), .failed(.installFailed):
+      Button("OK", action: controller.dismiss)
+        .keyboardShortcut(.defaultAction)
+        .buttonStyle(.glassProminent)
+    case .available:
+      Button("Plus tard", action: controller.dismiss)
+        .keyboardShortcut(.cancelAction)
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+      Button("Redémarrer et installer") { Task { await controller.install() } }
+        .keyboardShortcut(.defaultAction)
+        .buttonStyle(.glassProminent)
+    case .failed(.network):
+      dismissButton
+      Button("Réessayer") { Task { await controller.checkFromMenu() } }
+        .keyboardShortcut(.defaultAction)
+        .buttonStyle(.glassProminent)
+    case .failed(.location):
+      dismissButton
+      Button("Afficher dans le Finder", action: controller.revealApp)
+        .keyboardShortcut(.defaultAction)
+        .buttonStyle(.glassProminent)
+    case .downloading, .installing, nil:
+      EmptyView()
+    }
+  }
+
+  private var dismissButton: some View {
+    Button("OK", action: controller.dismiss)
+      .keyboardShortcut(.cancelAction)
+      .buttonStyle(.bordered)
+      .buttonBorderShape(.capsule)
+  }
+
+  @ViewBuilder
+  private func offer(version: SemanticVersion?) -> some View {
+    title("Une nouvelle version est disponible")
+    if let version {
+      VersionChips(installed: controller.installedVersion, offered: version)
+    }
   }
 
   private func title(_ text: LocalizedStringKey) -> some View {
     Text(text).font(Design.Typography.dialogTitle)
+  }
+
+  private func detail(_ text: LocalizedStringKey) -> some View {
+    Text(text).font(Design.Typography.body).foregroundStyle(.secondary)
+  }
+}
+
+/// The bar and `Annuler` share a centre line; the caption sits below that pair, outside the centring.
+private struct DownloadFooter: View {
+  let received: Int64
+  let total: Int64
+  let cancel: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 5) {
+      HStack(alignment: .center, spacing: 12) {
+        ProgressView(value: Double(received), total: Double(total))
+          .accessibilityLabel("Téléchargement")
+        Button("Annuler", action: cancel)
+          .keyboardShortcut(.cancelAction)
+          .buttonStyle(.bordered)
+          .buttonBorderShape(.capsule)
+          .controlSize(.large)
+      }
+      Text(UpdateController.downloadLabel(received: received, total: total))
+        .font(Design.Typography.caption).foregroundStyle(.secondary)
+    }
+  }
+}
+
+/// No button: from here the app is about to quit, and there is nothing left to cancel.
+private struct InstallFooter: View {
+  var body: some View {
+    VStack(alignment: .leading, spacing: 5) {
+      ProgressView().progressViewStyle(.linear)
+        .accessibilityLabel("Installation")
+      Text("Card Sheet Creator va redémarrer.")
+        .font(Design.Typography.caption).foregroundStyle(.secondary)
+    }
   }
 }
 

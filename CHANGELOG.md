@@ -30,6 +30,9 @@ Planned work, not yet scheduled in a release.
 
 - **Check for updates** — *Card Sheet Creator → Rechercher les mises à jour…* tells you whether a newer
   version exists; the app also checks quietly at launch.
+- **Install updates in one click** — *Redémarrer et installer* downloads the new version, checks that it is
+  authentic, replaces the app and relaunches it, without the *Open Anyway* step. Your current version stays
+  untouched if anything goes wrong.
 
 ### Changed
 

@@ -1,3 +1,4 @@
+import AppKit
 import Domain
 import Foundation
 import OSLog
@@ -29,8 +30,11 @@ final class UpdateController {
   private static let successStatus = 200
 
   private(set) var phase: Phase?
+  /// The sheet keeps showing the version on offer while it downloads and installs it.
+  private(set) var offeredVersion: SemanticVersion?
 
   @ObservationIgnored private let context: UpdateContext
+  @ObservationIgnored private var installation: Task<Void, any Error>?
 
   init(context: UpdateContext) {
     self.context = context
@@ -68,12 +72,98 @@ final class UpdateController {
     }
   }
 
-  func install() async {}
-  func cancel() {}
-  func dismiss() { phase = nil }
-  func revealApp() {}
+  /// Ignored unless an update is on offer: a second tap while one install runs starts nothing.
+  func install() async {
+    guard case .available(let update) = phase else { return }
+    guard context.canInstall(context.installedApp) else {
+      phase = .failed(.location)
+      return
+    }
+    offeredVersion = update.version
+    phase = .downloading(received: 0, total: Int64(update.archiveSize))
+    let installation = Task { try await stageAndLaunch(update) }
+    self.installation = installation
+    await conclude(installation, of: update)
+  }
 
-  static func downloadLabel(received: Int64, total: Int64) -> String { "" }
+  func cancel() { installation?.cancel() }
+  func dismiss() { phase = nil }
+
+  func revealApp() {
+    NSWorkspace.shared.activateFileViewerSelecting([context.installedApp])
+  }
+
+  static func downloadLabel(received: Int64, total: Int64) -> String {
+    let style = ByteCountFormatStyle(style: .file, locale: Locale(identifier: "fr_FR"))
+    return "Téléchargement… \(received.formatted(style)) sur \(total.formatted(style))"
+  }
+
+  private func conclude(_ installation: Task<Void, any Error>, of update: AvailableUpdate) async {
+    do {
+      try await installation.value
+    } catch is CancellationError {
+      phase = .available(update)
+    } catch is UpdateVerification.VerificationError {
+      Self.logger.error("Downloaded update refused: not authentic")
+      phase = .failed(.notAuthentic)
+    } catch {
+      Self.logger.error("Update install failed: \(error.localizedDescription)")
+      phase = .failed(.installFailed)
+    }
+    self.installation = nil
+  }
+
+  /// Nothing reaches `launchInstall` unless the signature held on the very archive that was unpacked and
+  /// the unpacked bundle is the announced version of this app. Any throw removes what was staged.
+  private func stageAndLaunch(_ update: AvailableUpdate) async throws {
+    let staging = try UpdateInstaller.makeStagingDirectory(appropriateFor: context.installedApp)
+    do {
+      let app = try await downloadAndVerify(update, into: staging)
+      try Task.checkCancellation()
+      phase = .installing
+      try context.launchInstall(StagedUpdate(app: app, staging: staging))
+    } catch {
+      removeStaging(staging)
+      throw error
+    }
+  }
+
+  private func downloadAndVerify(_ update: AvailableUpdate, into staging: URL) async throws -> URL {
+    let archive = staging.appending(path: "CardSheetCreator.zip")
+    let total = Int64(update.archiveSize)
+    try await UpdateDownload.fetch(
+      update.archive, to: archive, sizeLimit: update.archiveSize, configuration: context.configuration,
+      onProgress: { received in Task { @MainActor in self.record(received: received, of: total) } })
+    let signature = try await downloadSignature(update.signature, into: staging)
+    try await UpdateVerification.verifySignature(
+      archive: archive, signature: signature, publicKey: context.trustedKey)
+    let app = try await UpdateInstaller.extract(archive: archive, into: staging)
+    try await UpdateVerification.verifyStagedBundle(at: app, expectedVersion: update.version)
+    return app
+  }
+
+  /// Fetched like the archive, so that a server cannot make the app hold more than a signature in memory.
+  private func downloadSignature(_ url: URL, into staging: URL) async throws -> Data {
+    let file = staging.appending(path: "CardSheetCreator.zip.sig")
+    try await UpdateDownload.fetch(
+      url, to: file, sizeLimit: UpdateVerification.signatureSize, configuration: context.configuration,
+      onProgress: { _ in })
+    return try Data(contentsOf: file)
+  }
+
+  /// Progress only moves forward: a late callback must not undo a phase that has since moved on.
+  private func record(received: Int64, of total: Int64) {
+    guard case .downloading(let current, _) = phase, received > current else { return }
+    phase = .downloading(received: received, total: total)
+  }
+
+  private func removeStaging(_ staging: URL) {
+    do {
+      try FileManager.default.removeItem(at: staging)
+    } catch {
+      Self.logger.error("Update staging not removed: \(error.localizedDescription)")
+    }
+  }
 
   /// The helper that swaps the bundle cannot show anything itself: it leaves a file for the next launch.
   private func reportFailedSwap() -> Bool {
