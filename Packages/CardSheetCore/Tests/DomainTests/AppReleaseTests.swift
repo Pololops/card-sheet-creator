@@ -15,12 +15,12 @@ import Testing
 
   private func release(
     tag: String = "v0.7.0", archiveURL: String = Self.archiveURL, archiveSize: Int = 18_000_000,
-    signatureURL: String = Self.signatureURL, extraAssets: [[String: Any]] = []
+    signatureURL: String = Self.signatureURL, signatureSize: Int = 64, extraAssets: [[String: Any]] = []
   ) throws -> LatestRelease {
     let assets =
       [
         asset("CardSheetCreator.zip", url: archiveURL, size: archiveSize),
-        asset("CardSheetCreator.zip.sig", url: signatureURL, size: 64),
+        asset("CardSheetCreator.zip.sig", url: signatureURL, size: signatureSize),
       ] + extraAssets
     let json = try JSONSerialization.data(withJSONObject: ["tag_name": tag, "assets": assets])
     return try JSONDecoder().decode(LatestRelease.self, from: json)
@@ -127,6 +127,20 @@ import Testing
     let huge = try release(archiveSize: 200_000_001)
 
     #expect(throws: ReleaseError.tooLarge) { try huge.update(over: installed) }
+  }
+
+  @Test(arguments: [0, -1])
+  func anArchiveWithoutPositiveSizeIsRefused(size: Int) throws {
+    let empty = try release(archiveSize: size)
+
+    #expect(throws: ReleaseError.tooLarge) { try empty.update(over: installed) }
+  }
+
+  @Test(arguments: [0, 63, 65, 1_000_000])
+  func aSignatureThatIsNotSixtyFourBytesIsRefused(size: Int) throws {
+    let malformed = try release(signatureSize: size)
+
+    #expect(throws: ReleaseError.missingAsset) { try malformed.update(over: installed) }
   }
 
   @Test func anArchiveExactlyAtTheLimitIsAccepted() throws {

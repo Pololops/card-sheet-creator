@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 
 /// The single window: glass sidebar · canvas · inspector, as in the reference mockups.
 struct RootView: View {
-  let environment: AppEnvironment
+  @Bindable var environment: AppEnvironment
   @Bindable private var model: LibraryModel
   @State private var zoom = CanvasZoom()
   @State private var isInspectorShown = true
@@ -18,14 +18,12 @@ struct RootView: View {
   @State private var resizeDraft: ResizeDraft?
   @State private var selectedSlot: Int?
   @State private var calibrationFailure: String?
-  @State private var isRecoveryNoticeShown: Bool
   @Environment(\.undoManager) private var undoManager
   @Environment(\.openWindow) private var openWindow
 
   init(environment: AppEnvironment) {
     self.environment = environment
     model = environment.model
-    _isRecoveryNoticeShown = State(initialValue: environment.hasPendingRecoveryNotice)
   }
 
   var body: some View {
@@ -85,7 +83,9 @@ struct RootView: View {
     } message: {
       Text(calibrationFailure ?? "")
     }
-    .alert("Votre bibliothèque n’a pas encore été récupérée", isPresented: $isRecoveryNoticeShown) {
+    .alert(
+      "Votre bibliothèque n’a pas encore été récupérée", isPresented: $environment.hasPendingRecoveryNotice
+    ) {
       Button("OK") {}
     } message: {
       Text(
@@ -169,7 +169,7 @@ struct RootView: View {
   /// The update sheet waits for these: two sheets, or a sheet over an alert, would fight for the window.
   private var isPresentingOther: Bool {
     isNewSheetShown || isImagePickerShown || printController != nil || model.pendingTemplateOffer != nil
-      || calibrationFailure != nil || isRecoveryNoticeShown
+      || calibrationFailure != nil || environment.hasPendingRecoveryNotice
   }
 
   private var offerBinding: Binding<TemplateOffer?> {

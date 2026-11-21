@@ -26,27 +26,48 @@ extension FileLibraryStore {
     guard !fileManager.fileExists(atPath: marker.path) else { return }
     try fileManager.createDirectory(at: supportFolder, withIntermediateDirectories: true)
 
-    let hasContainerLibrary = fileManager.fileExists(
-      atPath: source.appendingPathComponent(manifestName).path)
-    if hasContainerLibrary {
+    if try hasLibrary(at: source) {
       try replaceTarget(with: source, in: supportFolder, target: target)
     }
     try Data().write(to: marker, options: .atomic)
   }
 
+  /// Only a provably missing manifest means "nothing to adopt". A denied read (EPERM from macOS
+  /// App Data protection, EACCES) looks the same to `fileExists`, and the marker would then
+  /// give up on a library that is still there, for good.
+  private static func hasLibrary(at source: URL) throws -> Bool {
+    do {
+      return try source.appendingPathComponent(manifestName).checkResourceIsReachable()
+    } catch let error as CocoaError where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile {
+      return false
+    }
+  }
+
   private static func replaceTarget(with source: URL, in supportFolder: URL, target: URL) throws {
     let fileManager = FileManager.default
     let staging = supportFolder.appendingPathComponent("Library.adopting-\(UUID().uuidString)")
+    var setAsideInterim: URL?
     do {
       try fileManager.copyItem(at: source, to: staging)
       if fileManager.fileExists(atPath: target.path) {
-        try fileManager.moveItem(at: target, to: unusedDatedName(for: target))
+        let datedName = unusedDatedName(for: target)
+        try fileManager.moveItem(at: target, to: datedName)
+        setAsideInterim = datedName
       }
       try fileManager.moveItem(at: staging, to: target)
     } catch {
       try? fileManager.removeItem(at: staging)
+      restoreInterim(setAsideInterim, to: target)
       throw error
     }
+  }
+
+  /// A failure between the two renames would leave no `Library` at all, and the app would start
+  /// on an empty one while the interim work sits hidden under a dated name.
+  private static func restoreInterim(_ setAside: URL?, to target: URL) {
+    let fileManager = FileManager.default
+    guard let setAside, !fileManager.fileExists(atPath: target.path) else { return }
+    try? fileManager.moveItem(at: setAside, to: target)
   }
 
   /// `Library-<yyyyMMdd-HHmmss>`; a taken name moves on to the next second rather than overwriting.

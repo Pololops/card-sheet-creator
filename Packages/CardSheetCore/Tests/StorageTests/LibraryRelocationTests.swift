@@ -220,6 +220,25 @@ import Testing
     #expect(FileManager.default.fileExists(atPath: marker.path))
   }
 
+  @Test func anUnreadableContainerIsNotMistakenForAnAbsentLibrary() throws {
+    try makeContainer()
+    try setAccess(0o000, to: container)
+    defer { try? setAccess(0o755, to: container) }
+
+    #expect(throws: (any Error).self) { try adopt() }
+
+    let leftovers = try siblings()
+    try setAccess(0o755, to: container)
+    try adopt()
+    #expect(leftovers.isEmpty)
+    #expect(try siblings() == [".adopted", "Library"])
+    #expect(try snapshot(of: target) == snapshot(of: container))
+  }
+
+  private func setAccess(_ permissions: Int, to folder: URL) throws {
+    try FileManager.default.setAttributes([.posixPermissions: permissions], ofItemAtPath: folder.path)
+  }
+
   private func makeTemplateUnreadable() throws -> URL {
     let template = container.appendingPathComponent("templates/a.json")
     try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: template.path)

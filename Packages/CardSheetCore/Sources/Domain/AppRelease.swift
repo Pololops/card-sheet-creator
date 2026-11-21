@@ -28,6 +28,8 @@ public struct LatestRelease: Decodable, Sendable {
     ?? URL(filePath: "/")
   /// Bounds what a release may ask the app to download and unpack; the real archive is ~20 MB.
   public static let maximumArchiveSize = 200_000_000
+  /// An Ed25519 signature is always 64 bytes: any other size is not a signature, and is never fetched.
+  private static let signatureSize = 64
 
   private static let archiveName = "CardSheetCreator.zip"
   private static let signatureName = "CardSheetCreator.zip.sig"
@@ -42,7 +44,8 @@ public struct LatestRelease: Decodable, Sendable {
     let signature = try uniqueAsset(named: Self.signatureName)
     guard Self.isTrusted(archive.browserDownloadURL), Self.isTrusted(signature.browserDownloadURL)
     else { throw ReleaseError.untrustedURL }
-    guard archive.size <= Self.maximumArchiveSize else { throw ReleaseError.tooLarge }
+    guard (1...Self.maximumArchiveSize).contains(archive.size) else { throw ReleaseError.tooLarge }
+    guard signature.size == Self.signatureSize else { throw ReleaseError.missingAsset }
     return AvailableUpdate(
       version: version, archive: archive.browserDownloadURL, archiveSize: archive.size,
       signature: signature.browserDownloadURL)

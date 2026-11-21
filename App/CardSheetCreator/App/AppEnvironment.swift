@@ -1,10 +1,12 @@
 import Foundation
 import OSLog
+import Observation
 import Printing
 import Storage
 
 /// Composition root: the one place where concrete storage and printing are chosen.
 @MainActor
+@Observable
 final class AppEnvironment {
   let model: LibraryModel
   let images: ImageCache
@@ -13,7 +15,8 @@ final class AppEnvironment {
   let calibrationRoute = ColorCalibrationRoute()
   let updates = UpdateController(context: .live())
   /// The previous version's library could not be copied: the app runs on an interim library until the next launch.
-  let hasPendingRecoveryNotice: Bool
+  /// Cleared once acknowledged, so that opening another window does not announce it again.
+  var hasPendingRecoveryNotice: Bool
 
   private static let logger = Logger(subsystem: "com.pololops.CardSheetCreator", category: "library")
 
