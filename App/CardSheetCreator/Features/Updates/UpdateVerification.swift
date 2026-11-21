@@ -12,7 +12,7 @@ nonisolated enum UpdateVerification {
 
   /// Base64 of the public key that `scripts/update-signing.swift` prints. `release.sh` refuses to publish
   /// with a signing key that does not appear here, so no release can ship while this is empty.
-  private static let publicKeyBase64 = ""
+  private static let publicKeyBase64 = "vwNppFEcWfa/sLuAvaiKs041sjEkbGIg6qUm8m2J8mA="
 
   static let embeddedPublicKey = Data(base64Encoded: publicKeyBase64) ?? Data()
 
