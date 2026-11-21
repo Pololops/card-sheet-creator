@@ -26,6 +26,11 @@ Planned work, not yet scheduled in a release.
 
 ## [Unreleased]
 
+### Added
+
+- **Check for updates** — *Card Sheet Creator → Rechercher les mises à jour…* tells you whether a newer
+  version exists; the app also checks quietly at launch.
+
 ### Changed
 
 - **Library location** — your templates and sheets now live in `~/Library/Application Support/CardSheetCreator/Library`.

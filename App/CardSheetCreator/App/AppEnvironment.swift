@@ -11,6 +11,7 @@ final class AppEnvironment {
   let printService: AppKitPrintService
   let persistence: FileLibraryStore
   let calibrationRoute = ColorCalibrationRoute()
+  let updates = UpdateController(context: .live())
   /// The previous version's library could not be copied: the app runs on an interim library until the next launch.
   let hasPendingRecoveryNotice: Bool
 

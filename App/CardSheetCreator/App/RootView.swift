@@ -96,6 +96,7 @@ struct RootView: View {
       route: environment.calibrationRoute, library: model,
       onReopen: { openPrint(sheets: $0, printerName: $1) }
     )
+    .updatePresentation(environment.updates, isBlocked: isPresentingOther)
     .focusedSceneValue(\.appActions, actions)
   }
 
@@ -163,6 +164,12 @@ struct RootView: View {
       return "Planche · \(cards) cartes\(origin)"
     }
     return ""
+  }
+
+  /// The update sheet waits for these: two sheets, or a sheet over an alert, would fight for the window.
+  private var isPresentingOther: Bool {
+    isNewSheetShown || isImagePickerShown || printController != nil || model.pendingTemplateOffer != nil
+      || calibrationFailure != nil || isRecoveryNoticeShown
   }
 
   private var offerBinding: Binding<TemplateOffer?> {

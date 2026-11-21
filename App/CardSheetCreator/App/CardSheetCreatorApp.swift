@@ -17,7 +17,7 @@ struct CardSheetCreatorApp: App {
         .frame(minWidth: 1100, minHeight: 720)
     }
     .defaultSize(width: 1280, height: 800)
-    .commands { AppCommands() }
+    .commands { AppCommands(updates: delegate.environment.updates) }
 
     // A second window rather than a sheet: the user looks at paper and screen side by side while the
     // library stays reachable behind it (ADR 0012).
@@ -33,6 +33,13 @@ struct CardSheetCreatorApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
   let environment = AppEnvironment()
+
+  /// Debug builds report version 0.1.0 and would offer every release: only release builds look at launch.
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    #if !DEBUG
+      Task { await environment.updates.checkAtLaunch() }
+    #endif
+  }
 
   /// Waits for pending saves so quitting right after an edit never loses it.
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -63,9 +70,15 @@ extension FocusedValues {
 }
 
 struct AppCommands: Commands {
+  let updates: UpdateController
   @FocusedValue(\.appActions) private var actions
+  @Environment(\.openWindow) private var openWindow
 
   var body: some Commands {
+    CommandGroup(after: .appInfo) {
+      Button("Rechercher les mises à jour…", action: checkForUpdates)
+        .disabled(updates.isBusy)
+    }
     CommandGroup(replacing: .newItem) {
       Button("Nouveau gabarit") { actions?.newTemplate() }
         .keyboardShortcut("n")
@@ -91,5 +104,11 @@ struct AppCommands: Commands {
       Button("Imprimer la page de calibration…") { actions?.printCalibrationPage() }
         .disabled(actions == nil)
     }
+  }
+
+  /// The sheet lives in the library window: reopen it if the user closed it.
+  private func checkForUpdates() {
+    openWindow(id: WindowID.library)
+    Task { await updates.checkFromMenu() }
   }
 }
