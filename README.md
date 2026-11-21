@@ -40,13 +40,26 @@ Formats: PNG, JPEG, HEIC, TIFF and PDF (first page).
 2. Move **CardSheetCreator.app** to your *Applications* folder.
 3. Open it. The app is not notarized by Apple, so macOS blocks the first launch:
    open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
-   This is needed once per new version.
+   This is needed only for this first install.
 
 Prefer the Terminal? This removes the quarantine flag instead:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/CardSheetCreator.app
 ```
+
+### Updates
+
+Later versions install from inside the app: **Card Sheet Creator → Rechercher les mises à jour…**
+(the app also checks at launch). It downloads the new version, checks it is authentic, replaces the app
+and relaunches it, without the *Open Anyway* step. If you run 0.6.0 or earlier, install the first
+version with updates manually, as above, once.
+
+### Your library
+
+Templates and sheets live in `~/Library/Application Support/CardSheetCreator`. The first launch of a
+version that has updates copies them from the previous version and tries again at the next launch if
+the copy fails. 0.6.0 and earlier keep their own separate copy.
 
 ### Check your printer in one minute
 
@@ -87,8 +100,19 @@ Every structuring decision is recorded in [`docs/adr`](docs/adr). Start with
 ### Release
 
 ```sh
-scripts/release.sh 1.0.0   # universal build, ad-hoc signed, zipped, published as a GitHub Release
+scripts/release.sh 1.0.0   # universal build, ad-hoc signed, zipped, signed with the update key, published
 ```
+
+The app only installs archives signed with an Ed25519 key. Set it up once:
+
+1. `swift scripts/update-signing.swift generate` prints a key pair and the
+   `security add-generic-password …` command that stores the private key in your login Keychain.
+2. Back the private key up offline: without it no update can be signed again.
+3. Embed the public key in `App/CardSheetCreator/Features/Updates/UpdateVerification.swift`.
+
+`release.sh` signs the zip, uploads `CardSheetCreator.zip.sig` next to it and aborts when the Keychain key
+does not match the public key embedded in the app. See
+[0014 — Signed in-app updates](docs/adr/0014-signed-in-app-updates.md).
 
 ## License
 
