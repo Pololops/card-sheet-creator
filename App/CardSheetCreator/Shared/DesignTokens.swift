@@ -26,6 +26,8 @@ enum Design {
     /// The invitation to calibrate: tinted like the accent, never glass, readable in light and dark.
     static let offerBackground = Color.accentColor.opacity(0.14)
     static let offerStroke = Color.accentColor.opacity(0.35)
+    /// Same tint as the calibration offer: the version on offer stands out from the installed one.
+    static let newVersionChip = offerBackground
     static let onAccent = Color.white
     /// Text on the always-white paper rectangle: fixed for the same reason as the paper itself.
     static let onPaper = Color.black.opacity(0.62)
@@ -50,6 +52,9 @@ enum Design {
     static let verificationReferenceSide: CGFloat = 96
     static let dryingRing: CGFloat = 128
     static let verificationRing: CGFloat = 112
+    /// Same construction as the print dialog, a little narrower: it holds a title and two chips, no form.
+    static let updateDialogWidth: CGFloat = 480
+    static let updateAppIcon: CGFloat = 64
   }
 
   enum Typography {

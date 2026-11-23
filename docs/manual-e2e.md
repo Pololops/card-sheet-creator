@@ -148,3 +148,38 @@ Run before each release, on the Canon G5000 series and at least one other printe
 
 40. Download the zip from the README link on another Mac (macOS 26), allow it in Privacy & Security,
     launch, print a sheet.
+
+## Updates
+
+41. On a Mac that ran 0.6.0 (library in its container), install the first version with updates over it
+    and launch: the sidebar shows the same templates and sheets, now stored in
+    `~/Library/Application Support/CardSheetCreator/Library`. Note any macOS access prompt (TCC) that
+    appears and whether the library still arrives after you answer it.
+42. Make the copy fail (`chmod 000` on one file of the container library), launch: the alert *Votre
+    bibliothèque n'a pas encore été récupérée* shows and the app starts. Restore the permission and
+    relaunch: the library is copied. If a new library was created in between, it sits next to the
+    adopted one as `Library-<date>`, never deleted.
+43. Relaunch 0.6.0: it opens its own library, untouched by the copy; changes made in either version do
+    not reach the other.
+44. *Card Sheet Creator → Rechercher les mises à jour…* with the latest release installed: *Card Sheet
+    Creator est à jour*. Switch Wi-Fi off and retry: *Impossible de rechercher les mises à jour*, and
+    *Réessayer* works once Wi-Fi is back. A DEBUG build shows no sheet at launch, and *Redémarrer et
+    installer* from it opens *Installation impossible depuis cet emplacement*.
+45. Archive a Release build with `MARKETING_VERSION=0.6.9`, copy it to `/Applications` and launch it
+    while a newer signed release is the latest: the launch sheet offers it. *Redémarrer et installer*
+    replaces the buttons with a progress bar and the label *Téléchargement… X Mo sur Y Mo*; *Annuler*
+    returns to the sheet. Install again: *Card Sheet Creator va redémarrer.*, then the app relaunches on
+    the new version with no Gatekeeper prompt. `xattr -l /Applications/CardSheetCreator.app` shows no
+    `com.apple.quarantine`, and no `CardSheetCreator.app.old` is left in `/Applications`.
+46. After that update, no *App Management* notification appeared in System Settings → Notifications.
+47. Download a release zip older than the latest (still quarantined), unzip it in `~/Downloads` and open the app from
+    there (macOS runs it translocated): *Redémarrer et installer* shows *Installation impossible depuis
+    cet emplacement*, and *Afficher dans le Finder* reveals the app.
+48. With the update sheet open, press ⌘P (and the reverse: print sheet first, then a menu check): only one
+    sheet shows at a time, and the update sheet comes once the other one is closed.
+49. During the download of step 45, the label shows a real total (X Mo sur Y Mo), even though GitHub
+    redirects the asset to another host.
+50. `scripts/release.sh` for a real release uploads both `CardSheetCreator.zip` and
+    `CardSheetCreator.zip.sig`. With another key in the Keychain, it aborts with *Signing key does not
+    match the app's embedded public key* before publishing anything.
+51. A forged signature is covered by the unit tests only: never publish a forged release as *latest*.

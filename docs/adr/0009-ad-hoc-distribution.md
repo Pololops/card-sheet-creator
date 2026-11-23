@@ -1,6 +1,6 @@
 # 9. Ad-hoc signed builds on GitHub Releases
 
-- Status: accepted
+- Status: superseded by [0014](0014-signed-in-app-updates.md)
 - Date: 2026-10-20
 
 ## Context

@@ -26,6 +26,22 @@ Planned work, not yet scheduled in a release.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-11-23
+
+### Added
+
+- **Check for updates** — *Card Sheet Creator → Rechercher les mises à jour…* tells you whether a newer
+  version exists; the app also checks quietly at launch.
+- **Install updates in one click** — *Redémarrer et installer* downloads the new version, checks that it is
+  authentic, replaces the app and relaunches it, without the *Open Anyway* step. Your current version stays
+  untouched if anything goes wrong.
+
+### Changed
+
+- **Library location** — your templates and sheets now live in `~/Library/Application Support/CardSheetCreator/Library`.
+  The first launch copies them from the previous version, and tries again at the next launch if the copy
+  fails. Relaunching 0.6.0 or earlier shows its own separate library.
+
 ## [0.6.0] — 2026-11-02
 
 ### Added
@@ -144,7 +160,8 @@ First release.
 - Liquid Glass app icon.
 - Formats: PNG, JPEG, HEIC, TIFF and PDF (first page).
 
-[Unreleased]: https://github.com/Pololops/card-sheet-creator/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Pololops/card-sheet-creator/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pololops/card-sheet-creator/compare/v0.3.0...v0.4.0

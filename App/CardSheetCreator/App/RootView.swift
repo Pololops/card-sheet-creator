@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 
 /// The single window: glass sidebar · canvas · inspector, as in the reference mockups.
 struct RootView: View {
-  let environment: AppEnvironment
+  @Bindable var environment: AppEnvironment
   @Bindable private var model: LibraryModel
   @State private var zoom = CanvasZoom()
   @State private var isInspectorShown = true
@@ -83,10 +83,20 @@ struct RootView: View {
     } message: {
       Text(calibrationFailure ?? "")
     }
+    .alert(
+      "Votre bibliothèque n’a pas encore été récupérée", isPresented: $environment.hasPendingRecoveryNotice
+    ) {
+      Button("OK") {}
+    } message: {
+      Text(
+        "Vos gabarits et planches de la version précédente n’ont pas pu être copiés. Card Sheet Creator réessaiera au prochain lancement."
+      )
+    }
     .colorCalibrationHandoff(
       route: environment.calibrationRoute, library: model,
       onReopen: { openPrint(sheets: $0, printerName: $1) }
     )
+    .updatePresentation(environment.updates, isBlocked: isPresentingOther)
     .focusedSceneValue(\.appActions, actions)
   }
 
@@ -154,6 +164,12 @@ struct RootView: View {
       return "Planche · \(cards) cartes\(origin)"
     }
     return ""
+  }
+
+  /// The update sheet waits for these: two sheets, or a sheet over an alert, would fight for the window.
+  private var isPresentingOther: Bool {
+    isNewSheetShown || isImagePickerShown || printController != nil || model.pendingTemplateOffer != nil
+      || calibrationFailure != nil || environment.hasPendingRecoveryNotice
   }
 
   private var offerBinding: Binding<TemplateOffer?> {
